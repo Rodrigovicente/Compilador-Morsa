@@ -21,8 +21,7 @@ struct atributos
 	static int count_vars = 0;
 	static int count_tmps = 0;
 
-	static vector<atributos> mapaVariaveis;
-
+	vector<atributos> mapaVariaveis;
 
 	bool mapaContemVar(atributos variavel){
 		
@@ -32,10 +31,24 @@ struct atributos
 		for(i = 0; i < mapaVariaveis.size(); i++){
 			if(mapaVariaveis[i].nome_var == variavel.nome_var){
 				result = true;
+				break;
 			}
 		}
 
 		return result;
+	}
+
+	bool mapaAddVar(atributos variavel){
+		if(!mapaContemVar(variavel)){
+			mapaVariaveis.push_back(variavel);
+			return true;
+		} else{
+			return false;
+		}
+	}
+
+	void mapaPushVar(atributos variavel){
+		mapaVariaveis.push_back(variavel);
 	}
 
 	string cria_nome_var(){
@@ -60,8 +73,7 @@ struct atributos
 %}
 
 %token TK_NUM
-%token TK_CHAR
-%token TK_BOOL
+%token TK_TIPO_INT TK_TIPO_FLOAT TK_TIPO_CHAR TK_TIPO_BOOL
 %token TK_MAIN TK_ID TK_TIPO_INT
 %token TK_FIM TK_ERROR
 
@@ -95,16 +107,38 @@ COMANDO 	: E ';'
 			}
 			;
 
-E 			: E '+' E
+E 			: '(' E ')'
 			{
-				$$.traducao = $1.traducao + $3.traducao + "\ta = b + c;\n";
+				$$.traducao = $2.traducao;
 			}
-			| TK_NUM
+			| E '+' E
 			{
-				$$.traducao = "\ta = " + $1.traducao + ";\n";
+
 			}
 			| TK_ID
+
+			| TIPO
+			{
+				$$ = $1;
+			}
 			;
+TIPO 		: TK_TIPO_INT
+			{
+				mapaContemVar($1);
+				$$.label = create_var_names();
+				$$.t_var = "int";
+				$$.traducao = "\t" + $$.label + " = " + $1.traducao + $1.label + ";\n";
+				insert_variable($$.t_var, $1.label, $1.traducao);
+
+
+				$$.label = proximo("num");
+				$$.tipo = "int";
+				$$.val=$$.traducao;
+				variaveis var = popular("", $$.tipo, $$.label);
+				variables_to_declare.push_back(var);
+				$$.traducao = "\t" + $$.label + " = " + $1.traducao + ";\n";
+			}
+
 
 %%
 
