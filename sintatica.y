@@ -18,20 +18,33 @@ struct atributos
 	string nome_var;
 };
 
+struct mapaVariaveis
+{
+	vector<atributos> attrs;
+	bool isLoop;
+	string rotulo_inicio;
+	string rotulo_fim;
+};
+
 	static int count_vars = 0;
 	static int count_tmps = 0;
 
-	vector<atributos> mapaVariaveis;
+	vector<mapaVariaveis> pilhaMapas;
+
+
+	/* !!!!!!!!!!!!! TEM QUE REFAZER TODAS AS FUNÇÕES DO MAPA PARA CONSIDERAR A PILHA DE MAPAS !!!!!!!!!!!! */
 
 	bool mapaContemVar(atributos variavel){
 		
 		bool result = false;
-		int i;
+		int i, j;
 
-		for(i = 0; i < mapaVariaveis.size(); i++){
-			if(mapaVariaveis[i].nome_var == variavel.nome_var){
-				result = true;
-				break;
+		for(i = pilhaMapas.size() - 1; i >= 0; i--){
+			for(j = 0; j < pilhaMapas[i].attrs.size(); j++){
+				if(pilhaMapas[i].attrs.nome_var == variavel.nome_var){
+					result = true;
+					break;
+				}
 			}
 		}
 
@@ -72,7 +85,7 @@ struct atributos
 
 %}
 
-%token TK_NUM
+%token TK_NUM TK_REAL TK_CHAR TK_BOOL TK_ID
 %token TK_TIPO_INT TK_TIPO_FLOAT TK_TIPO_CHAR TK_TIPO_BOOL
 %token TK_MAIN TK_ID TK_TIPO_INT
 %token TK_FIM TK_ERROR
@@ -83,11 +96,20 @@ struct atributos
 
 %%
 
-S 			: TK_TIPO_INT TK_MAIN '(' ')' BLOCO
+S 			: INIT_BLOCO BLOCO END_BLOCO
 			{
 				cout << "/*Compilador FOCA*/\n" << "#include <iostream>\n#include<string.h>\n#include<stdio.h>\nint main(void)\n{\n" << $5.traducao << "\treturn 0;\n}" << endl; 
 			}
 			;
+
+INIT_BLOCO	: {
+				mapaVariaveis mapVar;
+				pilhaMapas.push_back(mapVar);
+			}
+			;
+END_BLOCO	: {
+				pilhaMapas.pop_back();
+			}
 
 BLOCO		: '{' COMANDOS '}'
 			{
@@ -99,29 +121,102 @@ COMANDOS	: COMANDO COMANDOS
 			{
 
 			}
-			;
-
-COMANDO 	: E ';'
+			| INIT_BLOCO BLOCO END_BLOCO COMANDOS
 			{
 
 			}
 			;
+
+COMANDO 	: E ';'
+			| BL_CONDICIONAL ';'
+			| BL_LOOP ';'
+			;
+
+BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO // IF
+			{
+				
+			}
+			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE INIT_BLOCO BLOCO END_BLOCO // IF ELSE
+			{
+				
+			}
+			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE BL_CONDICIONAL_ELSEIF // IF ELSE IF
+			{
+				
+			}
+			| TK_COM_SWITCH '(' TK_ID ')' '{' BL_CONDICIONAL_SWITCH TK_COM_DEFAULT ':' INIT_BLOCO END_BLOCO // SWITCH (INCOMPLETO, TEM QUE ENTENDER COMO FUNCIONA)
+			;
+
+BL_CONDICIONAL_ELSEIF : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE BL_CONDICIONAL_ELSEIF
+			{
+				
+			}
+			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO
+			{
+				
+			}
+			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE INIT_BLOCO BLOCO END_BLOCO
+			{
+				
+			}
+			;
+
+BL_LOOP		: INIT_BLOCO TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO // WHILE
+			{
+
+			}
+			| INIT_BLOCO TK_COM_FOR '(' ATTR ';' CONDICAO ';' ATTR ')' BLOCO END_BLOCO // FOR
+			{
+
+			}
+			| INIT_BLOCO TK_COM_DO BLOCO TK_COM_WHILE '(' CONDICAO ')' END_BLOCO // DO... WHILE
 
 E 			: '(' E ')'
 			{
 				$$.traducao = $2.traducao;
 			}
-			| E '+' E
+			| TK_CAST E
 			{
-
+				// Casting
 			}
+			| E TK_OP_ARI E
+			{
+				// + - * / 
+			}
+			| E TK_OP_LOG E
+			{
+				// && || !
+			}
+			| CONDICAO
 			| TK_ID
-
-			| TIPO
-			{
-				$$ = $1;
-			}
+			| TK_NUM
+			| TK_REAL
+			| TK_CHAR
+			| TK_BOOL
 			;
+
+CONDICAO 	: E TK_OP_REL E 	//OPERAÇÕES RELACIONAIS
+			{
+				// > >= < <= == !=
+			}	
+
+ATTR 		: TK_ID TK_ATTR E
+			{
+				//TK_ATTR é o token de atribuicao, neste caso o yylval.label pode ser = += -= *= /=
+			}
+			| TK_ID TK_ATTR TK_ID
+			{
+				//TK_ATTR é o token de atribuicao, neste caso o yylval.label pode ser = += -= *= /=
+			}
+			| TK_ID TK_ATTR STRING
+			{
+				//TK_ATTR é o token de atribuicao, neste caso o yylval.label pode ser = += -= *= /=				
+			}
+			| TK_ID TK_ATTR
+			{
+				//TK_ATTR, neste caso, neste caso o yylval.label pode ser ++ --
+			}
+
 TIPO 		: TK_TIPO_INT
 			{
 				mapaContemVar($1);
