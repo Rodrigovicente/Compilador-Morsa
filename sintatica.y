@@ -16,6 +16,7 @@ typedef struct attr
 	string traducao;
 	string tipo_var;
 	string nome_var;
+	int tamanho; // Adicionando para utilizar a função de achar variavel.
 } atributos;
 
 typedef struct mapaVar
@@ -35,15 +36,17 @@ vector<mapaVariaveis> pilhaMapas;
 
 /* !!!!!!!!!!!!! TEM QUE REFAZER TODAS AS FUNÇÕES DO MAPA PARA CONSIDERAR A PILHA DE MAPAS !!!!!!!!!!!! */
 
-int mapasContemVar(atributos variavel){
-
-	int result = -1;
+int[] mapasContemVar(atributos variavel){
+	int result[2];
+ 	result[0] = -1;
+	result[1] = -1;
 	int i, j;
 
 	for(i = pilhaMapas.size() - 1; i >= 0; i--){
 		for(j = 0; j < pilhaMapas[i].attrs.size(); j++){
 			if(pilhaMapas[i].attrs[j].nome_var == variavel.nome_var){
-				result = i;
+				result[0] = i;
+				result[1] = j;
 				break;
 			}
 		}
@@ -52,8 +55,29 @@ int mapasContemVar(atributos variavel){
 	return result;
 }
 
+atributos mapaGetVar(atributos variavel){
+
+	atributos saida;
+
+	int i, j;
+
+	for(i = pilhaMapas.size() - 1; i >= 0; i--){
+		for(j = 0; j < pilhaMapas[i].attrs.size(); j++){
+			if(pilhaMapas[i].attrs[j].nome_var == variavel.nome_var){
+				saida = pilhaMapas[i].attrs[j].nome_var;
+				saida.traducao = "";
+				return saida;
+			}
+		}
+	}
+
+	saida.label = "!morsa"
+	return saida;
+
+}
+
 bool mapasAddVar(atributos variavel){
-	if(mapaContemVar(variavel) != -1){
+	if(mapaContemVar(variavel)[0] != -1){
 		pilhaMapas[i].push_back(variavel);
 		return true;
 	} else{
@@ -197,6 +221,13 @@ E 			: '(' E ')'
 			}
 			| CONDICAO
 			| TK_ID
+			{
+				$$ = mapaGetVar($1);
+				if($$.label == "!morsa"){
+					yyerror("Error-> Esta variavel morsa esta em extincao");
+				}
+
+			}
 			| TK_NUM
 			{
 				$$ = $1;
