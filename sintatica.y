@@ -10,76 +10,84 @@ using namespace std;
 int yylex(void);
 void yyerror(string);
 
-struct atributos
+typedef struct attr
 {
 	string label;
 	string traducao;
 	string tipo_var;
 	string nome_var;
-};
+} atributos;
 
-struct mapaVariaveis
+typedef struct mapaVar
 {
 	vector<atributos> attrs;
 	bool isLoop;
 	string rotulo_inicio;
 	string rotulo_fim;
-};
+} mapaVariaveis;
 
-	static int count_vars = 0;
-	static int count_tmps = 0;
+static int count_vars = 0;
+static int count_tmps = 0;
+static int count_rots = 0;
 
-	vector<mapaVariaveis> pilhaMapas;
+vector<mapaVariaveis> pilhaMapas;
 
 
-	/* !!!!!!!!!!!!! TEM QUE REFAZER TODAS AS FUNÇÕES DO MAPA PARA CONSIDERAR A PILHA DE MAPAS !!!!!!!!!!!! */
+/* !!!!!!!!!!!!! TEM QUE REFAZER TODAS AS FUNÇÕES DO MAPA PARA CONSIDERAR A PILHA DE MAPAS !!!!!!!!!!!! */
 
-	bool mapaContemVar(atributos variavel){
-		
-		bool result = false;
-		int i, j;
+int mapasContemVar(atributos variavel){
 
-		for(i = pilhaMapas.size() - 1; i >= 0; i--){
-			for(j = 0; j < pilhaMapas[i].attrs.size(); j++){
-				if(pilhaMapas[i].attrs.nome_var == variavel.nome_var){
-					result = true;
-					break;
-				}
+	int result = -1;
+	int i, j;
+
+	for(i = pilhaMapas.size() - 1; i >= 0; i--){
+		for(j = 0; j < pilhaMapas[i].attrs.size(); j++){
+			if(pilhaMapas[i].attrs[j].nome_var == variavel.nome_var){
+				result = i;
+				break;
 			}
 		}
-
-		return result;
 	}
 
-	bool mapaAddVar(atributos variavel){
-		if(!mapaContemVar(variavel)){
-			mapaVariaveis.push_back(variavel);
-			return true;
-		} else{
-			return false;
-		}
+	return result;
+}
+
+bool mapasAddVar(atributos variavel){
+	if(mapaContemVar(variavel) != -1){
+		pilhaMapas[i].push_back(variavel);
+		return true;
+	} else{
+		return false;
 	}
+}
 
-	void mapaPushVar(atributos variavel){
-		mapaVariaveis.push_back(variavel);
-	}
+void mapaPushVar(atributos variavel){
+	mapaVariaveis.push_back(variavel);
+}
 
-	string cria_nome_var(){
-		ostringstream convert;
-		convert << count_vars;
+string cria_nome_var(){
+	ostringstream convert;
+	convert << count_vars;
 
-		string nome = "var"+convert.str();
-		return nome;
-	}
+	string nome = "var_"+convert.str();
+	return nome;
+}
 
-	string cria_nome_tmp(){
-		ostringstream convert;
-		convert << count_tmps;
+string cria_nome_tmp(){
+	ostringstream convert;
+	convert << count_tmps;
 
-		string nome = "tmp"+convert.str();
-		return nome;
-	}
+	string nome = "tmp_"+convert.str();
+	return nome;
+}
 
+string cria_nome_rot(){
+	ostringstream convert;
+	convert << count_tmps;
+
+	string nome = "rot_"+convert.str();
+	return nome;
+}
 
 
 
@@ -98,7 +106,7 @@ struct mapaVariaveis
 
 S 			: INIT_BLOCO BLOCO END_BLOCO
 			{
-				cout << "/*Compilador FOCA*/\n" << "#include <iostream>\n#include<string.h>\n#include<stdio.h>\nint main(void)\n{\n" << $5.traducao << "\treturn 0;\n}" << endl; 
+				cout << "/*Compilador FOCA*/\n" << "#include <iostream>\n#include<string.h>\n#include<stdio.h>\nint main(void)\n{\n" << $5.traducao << "\treturn 0;\n}" << endl;
 			}
 			;
 
@@ -119,7 +127,7 @@ BLOCO		: '{' COMANDOS '}'
 
 COMANDOS	: COMANDO COMANDOS
 			{
-
+				$$.traducao = $1.traducao + $2.traducao;
 			}
 			| INIT_BLOCO BLOCO END_BLOCO COMANDOS
 			{
@@ -134,30 +142,30 @@ COMANDO 	: E ';'
 
 BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO // IF
 			{
-				
+
 			}
 			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE INIT_BLOCO BLOCO END_BLOCO // IF ELSE
 			{
-				
+
 			}
 			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE BL_CONDICIONAL_ELSEIF // IF ELSE IF
 			{
-				
+
 			}
 			| TK_COM_SWITCH '(' TK_ID ')' '{' BL_CONDICIONAL_SWITCH TK_COM_DEFAULT ':' INIT_BLOCO END_BLOCO // SWITCH (INCOMPLETO, TEM QUE ENTENDER COMO FUNCIONA)
 			;
 
 BL_CONDICIONAL_ELSEIF : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE BL_CONDICIONAL_ELSEIF
 			{
-				
+
 			}
 			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO
 			{
-				
+
 			}
 			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE INIT_BLOCO BLOCO END_BLOCO
 			{
-				
+
 			}
 			;
 
@@ -181,7 +189,7 @@ E 			: '(' E ')'
 			}
 			| E TK_OP_ARI E
 			{
-				// + - * / 
+				// + - * /
 			}
 			| E TK_OP_LOG E
 			{
@@ -198,9 +206,9 @@ E 			: '(' E ')'
 CONDICAO 	: E TK_OP_REL E 	//OPERAÇÕES RELACIONAIS
 			{
 				// > >= < <= == !=
-			}	
+			}
 
-ATTR 		: TK_ID TK_ATTR E
+ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 			{
 				//TK_ATTR é o token de atribuicao, neste caso o yylval.label pode ser = += -= *= /=
 			}
@@ -210,7 +218,7 @@ ATTR 		: TK_ID TK_ATTR E
 			}
 			| TK_ID TK_ATTR STRING
 			{
-				//TK_ATTR é o token de atribuicao, neste caso o yylval.label pode ser = += -= *= /=				
+				//TK_ATTR é o token de atribuicao, neste caso o yylval.label pode ser = += -= *= /=
 			}
 			| TK_ID TK_ATTR
 			{
@@ -219,9 +227,24 @@ ATTR 		: TK_ID TK_ATTR E
 
 TIPO 		: TK_TIPO_INT
 			{
-				mapaContemVar($1);
+
+			}
+			| TK_TIPO_FLOAT
+			{
+
+			}
+			| TK_TIPO_CHAR
+			{
+
+			}
+			| TK_TIPO_BOOL
+			{
+
+			}
+			;
+				mapContemVar($1);
 				$$.label = create_var_names();
-				$$.t_var = "int";
+				$$.tipo_var = "int";
 				$$.traducao = "\t" + $$.label + " = " + $1.traducao + $1.label + ";\n";
 				insert_variable($$.t_var, $1.label, $1.traducao);
 
@@ -232,7 +255,7 @@ TIPO 		: TK_TIPO_INT
 				variaveis var = popular("", $$.tipo, $$.label);
 				variables_to_declare.push_back(var);
 				$$.traducao = "\t" + $$.label + " = " + $1.traducao + ";\n";
-			}
+
 
 
 %%
@@ -252,4 +275,4 @@ void yyerror( string MSG )
 {
 	cout << MSG << endl;
 	exit (0);
-}				
+}
