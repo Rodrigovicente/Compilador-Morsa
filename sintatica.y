@@ -198,9 +198,24 @@ E 			: '(' E ')'
 			| CONDICAO
 			| TK_ID
 			| TK_NUM
+			{
+				$$ = $1;
+				$$.label = cria_nome_var();
+				$$.traducao = "\t" + $1.tipo + " " + $$.label + ";\n\t" + $$.label + " = " + $1.label + ";\n";
+			}
 			| TK_REAL
 			| TK_CHAR
+			{
+				$$ = $1;
+				$$.label = cria_nome_var();
+				$$.traducao = "\t" + $1.tipo + " " + $$.label + ";\n\t" + $$.label + " = " + $1.label + ";\n";
+			}
 			| TK_BOOL
+			{
+				$$ = $1;
+				$$.label = cria_nome_var();
+				$$.traducao = "\t" + $1.tipo + " " + $$.label + ";\n\t" + $$.label + " = " + $1.label + ";\n";
+			}
 			;
 
 CONDICAO 	: E TK_OP_REL E 	//OPERAÇÕES RELACIONAIS
