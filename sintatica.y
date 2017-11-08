@@ -257,6 +257,17 @@ CONDICAO 	: E TK_OP_REL E 	//OPERAÇÕES RELACIONAIS
 ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 			{
 				//TK_ATTR é o token de atribuicao, neste caso o yylval.label pode ser = += -= *= /=
+				$$ = mapaGetVar($1);
+
+				if($$.label == "!morsa"){
+					$$.tipo_var = $3.tipo_var;
+					$$.nome_var = $3.nome_var;
+					$$.label = cria_nome_var();
+					$$.traducao = $3.traducao;
+					$$.traducao .= $$.tipo + " " + $$.label + "; \n" + $$.label + " = " + $3.label + "; \n"; 
+					mapasAddVar($$);
+				}
+
 			}
 			| TK_ID TK_ATTR TK_ID
 			{
