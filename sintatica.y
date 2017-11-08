@@ -16,7 +16,7 @@ typedef struct attr
 	string traducao;
 	string tipo_var;
 	string nome_var;
-	int tamanho; // Adicionando para utilizar a função de achar variavel.
+	int tamanho; // Adicionado para utilizar em string!
 } atributos;
 
 typedef struct mapaVar
@@ -130,7 +130,7 @@ string cria_nome_rot(){
 
 S 			: INIT_BLOCO BLOCO END_BLOCO
 			{
-				cout << "/*Compilador FOCA*/\n" << "#include <iostream>\n#include<string.h>\n#include<stdio.h>\nint main(void)\n{\n" << $5.traducao << "\treturn 0;\n}" << endl;
+				cout << "/*Compilador MORSA*/\n" << "#include <iostream>\n#include<string.h>\n#include<stdio.h>\nint main(void)\n{\n" << $5.traducao << "\treturn 0;\n}" << endl;
 			}
 			;
 
