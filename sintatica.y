@@ -160,6 +160,8 @@ COMANDOS	: COMANDO COMANDOS
 			;
 
 COMANDO 	: E ';'
+			| DECLARACAO ';'
+			| ATTR ';'
 			| BL_CONDICIONAL ';'
 			| BL_LOOP ';'
 			;
@@ -224,7 +226,7 @@ E 			: '(' E ')'
 			{
 				$$ = mapaGetVar($1);
 				if($$.label == "!morsa"){
-					yyerror("Error-> Esta variavel morsa esta em extincao");
+					yyerror("E Esta variavel morsa esta em extincao");
 				}
 
 			}
@@ -232,20 +234,20 @@ E 			: '(' E ')'
 			{
 				$$ = $1;
 				$$.label = cria_nome_var();
-				$$.traducao = "\t" + $1.tipo + " " + $$.label + ";\n\t" + $$.label + " = " + $1.label + ";\n";
+				$$.traducao =  + $1.tipo + " " + $$.label + ";\n" + $$.label + " = " + $1.label + ";\n";
 			}
 			| TK_REAL
 			| TK_CHAR
 			{
 				$$ = $1;
 				$$.label = cria_nome_var();
-				$$.traducao = "\t" + $1.tipo + " " + $$.label + ";\n\t" + $$.label + " = " + $1.label + ";\n";
+				$$.traducao =  $1.tipo + " " + $$.label + ";\n" + $$.label + " = " + $1.label + ";\n";
 			}
 			| TK_BOOL
 			{
 				$$ = $1;
 				$$.label = cria_nome_var();
-				$$.traducao = "\t" + $1.tipo + " " + $$.label + ";\n\t" + $$.label + " = " + $1.label + ";\n";
+				$$.traducao = $1.tipo + " " + $$.label + ";\n" + $$.label + " = " + $1.label + ";\n";
 			}
 			;
 
@@ -257,10 +259,26 @@ CONDICAO 	: E TK_OP_REL E 	//OPERAÇÕES RELACIONAIS
 ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 			{
 				//TK_ATTR é o token de atribuicao, neste caso o yylval.label pode ser = += -= *= /=
-			}
-			| TK_ID TK_ATTR TK_ID
-			{
-				//TK_ATTR é o token de atribuicao, neste caso o yylval.label pode ser = += -= *= /=
+				$$ = mapaGetVar($1);
+
+				if($$.label == "!morsa"){
+					yyerror("ERRO: Não existe uma variável com este nome.");
+				} else{
+					if($2.label == "="){
+						$$.traducao = $3.traducao;
+						$$.traducao += $$.label + " = " + $3.label + "; \n";
+
+					} else if($2.label == "*=" || $2.label == "/=" || $2.label == "+=" || $2.label == "-="){
+						if(($1.tipo_var == "int" || $1.tipo_var == "float") && ($3.tipo_var == "int" || $3.tipo_var == "float")){
+								$$.traducao = $3.traducao;
+								$$.traducao += $$.label + " " + $2.label + " " + $3.label + "; \n";
+						} else {
+							yyerror("ERRO: Os tipos das variáveis ou expressões não são válidos para a operação (ao menos uma não é float ou int).");
+						}
+
+					}
+				}
+
 			}
 			| TK_ID TK_ATTR STRING
 			{
@@ -269,23 +287,40 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 			| TK_ID TK_ATTR
 			{
 				//TK_ATTR, neste caso, neste caso o yylval.label pode ser ++ --
+				$$ = mapaGetVar($1);
+
+				if($$.label == "!morsa"){
+					yyerror("ERRO: Não existe uma variável com este nome.");
+				} else{
+					if($2.label == "++"){
+						if($$.tipo_var == "int" || $$.tipo_var == "float"){
+							$$.traducao = $$.label + " = " + $$.label + " + 1; \n";
+						} else{
+							yyerror("ERRO: A var");d
+						}	}
+
+					} else if($2.label == "--"){
+
+					} else{
+						yyerror("ERRO: Operação de atribuição não está completa (está faltando uma variável ou expressão para ser atribuida à variável especificada).");
+					}
+				}
 			}
 
-TIPO 		: TK_TIPO_INT
+DECLARACAO	: TK_TIPO TK_ID
 			{
+				$$ = mapaGetVar($2);
 
-			}
-			| TK_TIPO_FLOAT
-			{
-
-			}
-			| TK_TIPO_CHAR
-			{
-
-			}
-			| TK_TIPO_BOOL
-			{
-
+				if($$.label == "!morsa"){
+					$$.tipo_var = $1.label;
+					$$.nome_var = $2.nome_var;
+					$$.label = cria_nome_var();
+					$$.traducao = $2.traducao;
+					$$.traducao += $$.tipo + " " + $$.label + "; \n" + $$.label + " = " + $2.label + "; \n";
+					mapasAddVar($$);
+				} else{
+					yyerror("ERRO: Já existe uma variável com este nome.");
+				}
 			}
 			;
 				mapContemVar($1);
