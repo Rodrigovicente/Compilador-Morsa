@@ -3,6 +3,8 @@ all:
 		clear
 		lex lexica.l
 		yacc -d sintatica.y
-		g++ -o glf y.tab.c -lfl
+		g++ -o morsao y.tab.c -lfl
 
-		./glf < $(nome)
+clean:
+	rm glf
+	rm *.o
