@@ -22,19 +22,9 @@ ID {LETRA}({LETRA}|{NUM})*
 
 "main"		{return TK_MAIN;}
 
-"int"		{return TK_TIPO_INT;}
+"int"|"float"|"char"|"bool"	{ yylval.label = yytext; return TK_TIPO}
 
-"float"		{return TK_TIPO_FLOAT}
-
-"char"		{return TK_TIPO_CHAR}
-
-"bool"		{return TK_TIPO_BOOL}
-
-"(int)"		{ yylval.label = yytext; return TK_CAST}
-
-"(float)"	{ yylval.label = yytext; return TK_CAST}
-
-"(char)"	{ yylval.label = yytext; return TK_CAST}
+"(int)"|"(float)"|"(char)"		{ yylval.label = yytext; return TK_CAST}
 
 [(){}[\];,]	{ return *yytext; }
 
@@ -43,8 +33,9 @@ ID {LETRA}({LETRA}|{NUM})*
 
 "&&"|"and"	{return TK_OP_AND;}
 
-"||"|"or"	{return TK_OP_OR;} 
+"||"|"or"	{return TK_OP_OR;}
 
+"="|"*="|"/="|"+="|"=="|"++"|"--"	{yylval.label = yytext; return TK_ATTR; }
 
 
 {NUM}		{ yylval.label = yytext; yylval.tipo_var = "int"; return TK_NUM; }
