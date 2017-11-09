@@ -280,10 +280,6 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 				}
 
 			}
-			| TK_ID TK_ATTR STRING
-			{
-				//TK_ATTR é o token de atribuicao, neste caso o yylval.label pode ser = += -= *= /=
-			}
 			| TK_ID TK_ATTR
 			{
 				//TK_ATTR, neste caso, neste caso o yylval.label pode ser ++ --
@@ -296,10 +292,15 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 						if($$.tipo_var == "int" || $$.tipo_var == "float"){
 							$$.traducao = $$.label + " = " + $$.label + " + 1; \n";
 						} else{
-							yyerror("ERRO: A var");d
-						}	}
+							yyerror("ERRO: A variável não é do tipo numérico (int ou float)");
+						}
 
 					} else if($2.label == "--"){
+						if($$.tipo_var == "int" || $$.tipo_var == "float"){
+							$$.traducao = $$.label + " = " + $$.label + " - 1; \n";
+						} else{
+							yyerror("ERRO: A variável não é do tipo numérico (int ou float)");
+						}
 
 					} else{
 						yyerror("ERRO: Operação de atribuição não está completa (está faltando uma variável ou expressão para ser atribuida à variável especificada).");
@@ -313,30 +314,15 @@ DECLARACAO	: TK_TIPO TK_ID
 
 				if($$.label == "!morsa"){
 					$$.tipo_var = $1.label;
-					$$.nome_var = $2.nome_var;
+					$$.nome_var = $2.label;
 					$$.label = cria_nome_var();
-					$$.traducao = $2.traducao;
-					$$.traducao += $$.tipo + " " + $$.label + "; \n" + $$.label + " = " + $2.label + "; \n";
+					$$.traducao = $$.tipo + " " + $$.label + "; \n";
 					mapasAddVar($$);
 				} else{
 					yyerror("ERRO: Já existe uma variável com este nome.");
 				}
 			}
 			;
-				mapContemVar($1);
-				$$.label = create_var_names();
-				$$.tipo_var = "int";
-				$$.traducao = "\t" + $$.label + " = " + $1.traducao + $1.label + ";\n";
-				insert_variable($$.t_var, $1.label, $1.traducao);
-
-
-				$$.label = proximo("num");
-				$$.tipo = "int";
-				$$.val=$$.traducao;
-				variaveis var = popular("", $$.tipo, $$.label);
-				variables_to_declare.push_back(var);
-				$$.traducao = "\t" + $$.label + " = " + $1.traducao + ";\n";
-
 
 
 %%
