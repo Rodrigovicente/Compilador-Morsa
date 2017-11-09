@@ -226,7 +226,7 @@ E 			: '(' E ')'
 			{
 				$$ = mapaGetVar($1);
 				if($$.label == "!morsa"){
-					yyerror("E Esta variavel morsa esta em extincao");
+					yyerror("ERRO: Esta variavel morsa esta em extincao");
 				}
 
 			}
