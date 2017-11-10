@@ -112,8 +112,41 @@ string cria_nome_rot(){
 	string nome = "rot_"+convert.str();
 	return nome;
 }
+  
+  string int_to_float(atributos attr){
+  	string result;
 
+  	result = attr.label + ".0";
 
+  	return result;
+  }
+  
+  //testar as duas
+  
+  string float_to_int(atributos attr){
+  	int i;
+    std::string result;
+    for(i = 0; i < attr.label.size() - 1; i++){
+      if(attr.label[i] == "."){
+        result = attr.label.substr (0,i);
+        break;
+      }
+    }
+    return result;
+  }
+  
+  
+  string float_to_int(atributos attr){
+    int i;
+    string resultado;
+    for(i = 0; i< attr.label.size() - 1; i++){
+      if(attr.label[i] == "."){
+        return resultado;
+      }else {
+        resultado += attr.label[i];
+      }
+    }
+  }
 
 %}
 
@@ -166,19 +199,22 @@ COMANDO 	: E ';'
 			| BL_LOOP ';'
 			;
 
-BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO // IF
+BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO 
 			{
-
+				// IF
 			}
-			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE INIT_BLOCO BLOCO END_BLOCO // IF ELSE
+			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE INIT_BLOCO BLOCO END_BLOCO 
 			{
-
+				// IF ELSE
 			}
-			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE BL_CONDICIONAL_ELSEIF // IF ELSE IF
+			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE BL_CONDICIONAL_ELSEIF 
 			{
-
+				// IF ELSE IF
 			}
-			| TK_COM_SWITCH '(' TK_ID ')' '{' BL_CONDICIONAL_SWITCH TK_COM_DEFAULT ':' INIT_BLOCO END_BLOCO // SWITCH (INCOMPLETO, TEM QUE ENTENDER COMO FUNCIONA)
+			| TK_COM_SWITCH '(' TK_ID ')' '{' BL_CONDICIONAL_SWITCH TK_COM_DEFAULT ':' INIT_BLOCO END_BLOCO 
+      {
+        // SWITCH (INCOMPLETO, TEM QUE ENTENDER COMO FUNCIONA)
+      }
 			;
 
 BL_CONDICIONAL_ELSEIF : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE BL_CONDICIONAL_ELSEIF
@@ -195,31 +231,119 @@ BL_CONDICIONAL_ELSEIF : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK
 			}
 			;
 
-BL_LOOP		: INIT_BLOCO TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO // WHILE
+BL_LOOP		: INIT_BLOCO TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 			{
-
+				// WHILE
 			}
-			| INIT_BLOCO TK_COM_FOR '(' ATTR ';' CONDICAO ';' ATTR ')' BLOCO END_BLOCO // FOR
+			| INIT_BLOCO TK_COM_FOR '(' ATTR ';' CONDICAO ';' ATTR ')' BLOCO END_BLOCO
 			{
-
+				// FOR
 			}
-			| INIT_BLOCO TK_COM_DO BLOCO TK_COM_WHILE '(' CONDICAO ')' END_BLOCO // DO... WHILE
-
+			| INIT_BLOCO TK_COM_DO BLOCO TK_COM_WHILE '(' CONDICAO ')' END_BLOCO
+			{
+				// DO... WHILE
+			}
+			;
 E 			: '(' E ')'
 			{
 				$$.traducao = $2.traducao;
 			}
 			| TK_CAST E
 			{
-				// Casting
-			}
+          	// Casting // peida de mudar o casting para outra coisa? tipo (parseInt) (parseFloat) (parseChar) sei la. algo para não ficar muito C LIKE
+              /*
+              	com parentesiiiiiiiiiiiiiiiiiiiiiiiiiis, não é melhor?
+              	int var;
+                var = int: 1.5; << esse é melhor kkkkkk eu sei, mas fica muito C like vamos dar uma divertida na parada. tipo (MorsaInt) KKK
+                a indentação tá uma merda
+              */
+            	$$.label = cria_nome_var();
+            	$$.traducao = $2.traducao;
+				
+				if($1.label == "(int)"){ 
+					if($2.label.tipo_var == "float"){ // mas tava int ali em baixo, porra. Acho melhor não. Todo mundo faz referencia a variavel. 
+                    	$$.tipo_var = "int"; 
+                    	string aux_var = cria_nome_tmp();
+                    	$$.traducao += "int " + aux_var + "; \n" + aux_var + " = " + float_to_int($2) "; \n int " + $$.label + " = " + aux_var + "; \n";
+                    
+                    } else if($2.label.tipo_var == "int"){
+                      	$$.tipo_var = "int";
+                      	$$.traducao += "int " + $$.label + "; \n" + $$.label + " = " + $2.label "; \n";
+                    
+                    } else if($2.label.tipo_var == "char"){
+                    	// CONTINUAR
+                    	 //tranformar char em int vamos ter que fazer uma função de ASCII. 
+                    } else{
+                     	yyerror("ERROR: Não é possível realizar a conversão para este tipo."); 
+                    }
+            		
+				} else if($1.label == "(float)"){
+                	if($2.label.tipo_var == "int"){
+						$$.tipo_var = "float";
+                      	string aux_var = cria_nome_tmp();
+                      	$$.traducao += "float " + aux_var + "; \n" + aux_var + " = " + int_to_float($2) "; \n int " + $$.label + " = " + aux_var + "; \n";
+                
+                	} else if($2.label.tipo_var == "float"){
+                      	$$.tipo_var = "float";
+                      	$$.traducao += "float " + $$.label + "; \n" + $$.label + " = " + $2.label "; \n";
+                    } else if($2.label.tipo_var == "char"){
+                    	// CONTINUAR
+                    	 //tranformar char em int vamos ter que fazer uma função de ASCII. 
+                    } else{
+                     	yyerror("ERROR: Não é possível realizar a conversão para este tipo."); 
+                    }
+                    // vamos ter que mudar uns bangs pq string tem que ser primitiva. O ideal é nao deixar converter para string, então deixa else if e o ultimo else nao tem como
+                } else{ // caso cast (char)
+                	if($2.label.tipo_var == "int"){
+                    	// CONTINUAR conversao de int para char
+                    } else{
+                     	yyerror("ERROR: Não é possível realizar a conversão para este tipo."); 
+                    }
+                }
+          
+      }
 			| E TK_OP_ARI E
 			{
 				// + - * /
+				$$.label = cria_nome_var();
+				$$.traducao = $1.traducao + $3.traducao;
+
+				// para numeros
+				if(($1.tipo_var == "int" || $1.tipo_var == "float") && ($3.tipo_var == "float" || $3.tipo_var == "int")){
+					if($1.tipo_var == $3.tipo_var){
+						$$.tipo_var = $1.tipo_var;
+						$$.traducao += $$.tipo_var + " " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + $3.label + "; \n";
+					} else{
+						if($1.tipo_var == "float"){
+							string aux_var = cria_nome_tmp();
+							$$.traducao += "float " + aux_var + "; \n" + aux_var + " = " + int_to_float($3) "; \n";
+							$$.traducao += "float " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + aux_var + "; \n";
+						} else{
+							string aux_var = cria_nome_tmp();
+							$$.traducao += "float " + aux_var + "; \n" + aux_var + " = " + int_to_float($1) "; \n";
+							$$.traducao += "float " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + aux_var + "; \n";
+						}
+					}
+                }
+              	// para char e string (concatenacao)
+              	else if(($1.tipo_var == "char" || $1.tipo_var == "string") && ($3.tipo_var == "char" || $3.tipo_var == "string")){
+                	if($2.label == "+"){
+                		if($1.tipo_var == $3.tipo_var){
+							$$.tipo_var = "string";
+                          	// CONTINUAR
+                        	$$.traducao += "char* " + $$.label + "; \n" + $$.label + " = " + $1.label + $3.label + "; \n";
+						}
+                    }
+                }
 			}
 			| E TK_OP_LOG E
 			{
 				// && || !
+				if($1.tipo_var == "bool" && $3.tipo_var == "bool"){
+
+				} else{
+					yyerror("ERRO: Operações lógicas devem ser realizadas entre expressões de tipo bool.")
+				}
 			}
 			| CONDICAO
 			| TK_ID
@@ -234,20 +358,25 @@ E 			: '(' E ')'
 			{
 				$$ = $1;
 				$$.label = cria_nome_var();
-				$$.traducao =  + $1.tipo + " " + $$.label + ";\n" + $$.label + " = " + $1.label + ";\n";
+				$$.traducao =  $1.tipo + " " + $$.label + "; \n" + $$.label + " = " + $1.label + "; \n";
 			}
 			| TK_REAL
+			{
+				$$ = $1;
+				$$.label = cria_nome_var();
+				$$.traducao =  $1.tipo + " " + $$.label + "; \n" + $$.label + " = " + $1.label + "; \n";
+			}
 			| TK_CHAR
 			{
 				$$ = $1;
 				$$.label = cria_nome_var();
-				$$.traducao =  $1.tipo + " " + $$.label + ";\n" + $$.label + " = " + $1.label + ";\n";
+				$$.traducao =  $1.tipo + " " + $$.label + "; \n" + $$.label + " = " + $1.label + "; \n";
 			}
 			| TK_BOOL
 			{
 				$$ = $1;
 				$$.label = cria_nome_var();
-				$$.traducao = $1.tipo + " " + $$.label + ";\n" + $$.label + " = " + $1.label + ";\n";
+				$$.traducao = $1.tipo + " " + $$.label + "; \n" + $$.label + " = " + $1.label + "; \n";
 			}
 			;
 
@@ -256,31 +385,28 @@ CONDICAO 	: E TK_OP_REL E 	//OPERAÇÕES RELACIONAIS
 				// > >= < <= == !=
 				$$.tipo_var = "bool";
 				$$.label = cria_nome_var();
-
+                $$.traducao = $1.traducao + $3.traducao;
+				
 				if($1.tipo_var == $3.tipo_var){ //caso sejam de tipos iguais
-					if($2.label == "=="){
-						$$.traducao = $1.traducao + $3.traducao;
-						$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + " == " + $3.label + "; \n";
-					} else if($2.label == "!="){
-						$$.traducao = $1.traducao + $3.traducao;
-						$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + " != " + $3.label + "; \n";
+					if($2.label == "==" || $2.label == "!="){
+						$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + $3.label + "; \n";
 					} else{
-		 				if($1.tipo_var == "char" || $1.tipo_var == "float" || $1.tipo_var == "int" ){
-							$$.traducao = $1.traducao + $3.traducao;
+						if($1.tipo_var == "char" || $1.tipo_var == "float" || $1.tipo_var == "int" ){
 							$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + $3.label + "; \n";
 						}
 					}
 
 				} else{ //caso sejam de tipos diferentes
 					if(($1.tipo_var == "int" && $3.tipo_var == "float") || ($1.tipo_var == "float" && $3.tipo_var == "int")){
-						$$.traducao = $1.traducao + $3.traducao;
 						$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + $3.label + "; \n";
-					}
-				}
+                    } else{
+                    	yyerror("ERRO: Não é possível realizar esta operações entres estes tipos de variáveis."); 
+                    }
+                }
 			}
-
+			;
 ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
-			{
+			{ 	// TEMOS QUE ALTERAR AQUI??
 				//TK_ATTR é o token de atribuicao, neste caso o yylval.label pode ser = += -= *= /=
 				$$ = mapaGetVar($1);
 
@@ -290,6 +416,12 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 					if($2.label == "="){
 						$$.traducao = $3.traducao;
 						$$.traducao += $$.label + " = " + $3.label + "; \n";
+
+						/*
+                        	CONTINUAR
+							DÚVIDA: nesta parte de atribuição pode ser usado a conversão implicita do C, ou se o E tiver um tipo diferendo do TK_ID deve ser
+							feita uma conversão?
+						*/
 
 					} else{
 						if(($1.tipo_var == "int" || $1.tipo_var == "float") && ($3.tipo_var == "int" || $3.tipo_var == "float")){
@@ -314,6 +446,22 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 					}
 				}
 
+			}
+			| DECLARACAO TK_ATTR E
+			{
+				if($2.label == "="){
+					$$.traducao = $3.traducao;
+					$$.traducao += $$.label + " = " + $3.label + "; \n";
+
+						/*
+                        	CONTINUAR
+							DÚVIDA: nesta parte de atribuição pode ser usado a conversão implicita do C, ou se o E tiver um tipo diferendo do TK_ID deve ser
+							feita uma conversão?
+						*/
+
+                } else{
+                	yyerror("ERRO: Esta atribuição não pode ser realizada."); 
+                }
 			}
 			| TK_ID TK_ATTR
 			{
@@ -342,7 +490,7 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 					}
 				}
 			}
-
+			;
 DECLARACAO	: TK_TIPO TK_ID
 			{
 				$$ = mapaGetVar($2);
