@@ -128,7 +128,7 @@ string cria_nome_rot(){
 
 %%
 
-S 			: BLOCO
+S 			: INIT_BLOCO BLOCO END_BLOCO
 			{
 				cout << "/*Compilador MORSA*/\n" << "#include <iostream>\n#include<string.h>\n#include<stdio.h>\nint main(void)\n{\n" << $1.traducao << "\treturn 0;\n}" << endl;
 			}
@@ -143,7 +143,7 @@ END_BLOCO	: {
 				pilhaMapas.pop_back();
 			}
 
-BLOCO		: INIT_BLOCO '{' COMANDOS '}' END_BLOCO
+BLOCO		: '{' COMANDOS '}'
 			{
 				$$.traducao = $3.traducao;
 			}
