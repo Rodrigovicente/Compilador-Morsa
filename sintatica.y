@@ -254,6 +254,29 @@ E 			: '(' E ')'
 CONDICAO 	: E TK_OP_REL E 	//OPERAÇÕES RELACIONAIS
 			{
 				// > >= < <= == !=
+				$$.tipo_var = "bool";
+				$$.label = cria_nome_var();
+
+				if($1.tipo_var == $3.tipo_var){ //caso sejam de tipos iguais
+					if($2.label == "=="){
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + " == " + $3.label + "; \n";
+					} else if($2.label == "!="){
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + " != " + $3.label + "; \n";
+					} else{
+		 				if($1.tipo_var == "char" || $1.tipo_var == "float" || $1.tipo_var == "int" ){
+							$$.traducao = $1.traducao + $3.traducao;
+							$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + $3.label + "; \n";
+						}
+					}
+
+				} else{ //caso sejam de tipos diferentes
+					if(($1.tipo_var == "int" && $3.tipo_var == "float") || ($1.tipo_var == "float" && $3.tipo_var == "int")){
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + $3.label + "; \n";
+					}
+				}
 			}
 
 ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
@@ -268,14 +291,26 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 						$$.traducao = $3.traducao;
 						$$.traducao += $$.label + " = " + $3.label + "; \n";
 
-					} else if($2.label == "*=" || $2.label == "/=" || $2.label == "+=" || $2.label == "-="){
+					} else{
 						if(($1.tipo_var == "int" || $1.tipo_var == "float") && ($3.tipo_var == "int" || $3.tipo_var == "float")){
+							if($2.label == "*="){
 								$$.traducao = $3.traducao;
-								$$.traducao += $$.label + " " + $2.label + " " + $3.label + "; \n";
+								$$.traducao += $$.label + " = " + $$.label + " * " + $3.label + "; \n";
+							} else if($2.label == "/="){
+								$$.traducao = $3.traducao;
+								$$.traducao += $$.label + " = " + $$.label + " / " + $3.label + "; \n";
+							} else if($2.label == "+="){
+								$$.traducao = $3.traducao;
+								$$.traducao += $$.label + " = " + $$.label + " + " + $3.label + "; \n";
+							} else if($2.label == "-="){
+								$$.traducao = $3.traducao;
+								$$.traducao += $$.label + " = " + $$.label + " - " + $3.label + "; \n";
+							} else{
+								yyerror("ERRO: A operação de atribuição não é válida.");
+							}
 						} else {
 							yyerror("ERRO: Os tipos das variáveis ou expressões não são válidos para a operação (ao menos uma não é float ou int).");
 						}
-
 					}
 				}
 
@@ -321,6 +356,25 @@ DECLARACAO	: TK_TIPO TK_ID
 				} else{
 					yyerror("ERRO: Já existe uma variável com este nome.");
 				}
+			}
+			| TK_TIPO_INFERIDO TK_ID "=" E
+			{
+				$$ = mapaGetVar($2);
+
+				if($$.label == "!morsa"){
+					$$.tipo_var = $4.tipo_var;
+					$$.nome_var = $2.label;
+					$$.label = cria_nome_var();
+					$$.traducao = $4.traducao;
+					$$.traducao += $$.tipo_var + " " + $$.label + "; \n";
+					mapasAddVar($$);
+				} else{
+					yyerror("ERRO: Já existe uma variável com este nome.");
+				}
+			}
+			| TK_TIPO_INFERIDO TK_ID
+			{
+				yyerror("ERRO: Você deve atribuir um valor a esta variável para inferir o seu tipo.");
 			}
 			;
 
