@@ -33,9 +33,7 @@ ID {LETRA}({LETRA}|{NUM})*
 [+\-*/]		{ yylval.traducao = yytext; return TK_OP_MAT; }
 
 
-"&&"|"and"	{return TK_OP_AND;}
-
-"||"|"or"	{return TK_OP_OR;}
+"&&"|"and"|"||"|"or"|"!"	{return TK_OP_OR;}
 
 "="|"*="|"/="|"+="|"=="|"++"|"--"	{yylval.label = yytext; return TK_ATTR; }
 
