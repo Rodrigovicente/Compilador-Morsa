@@ -45,6 +45,7 @@ ID {LETRA}({LETRA}|{NUM})*
 {CHAR}		{ yylval.label = yytext; yylval.tipo_var = "char"; return TK_CHAR; }
 {BOOL}		{ yylval.label = yytext; yylval.tipo_var = "bool"; return TK_BOOL; }
 {ID}		{ yylval.label = yytext; return TK_ID; }
+{STRING}  { yylval.label = yytext; yylval.tipo_var = "string"; return TK_STRING; }
 
 .			{ *yytext; }
 
