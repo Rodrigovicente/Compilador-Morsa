@@ -13,6 +13,7 @@ REAL {NUM}+("."{NUM}+)?
 CHAR \'({LETRA}|{NUM})\'
 BOOL "true"|"false"
 ID {LETRA}({LETRA}|{NUM})*
+STRING \"({LETRA}|{NUM})+\"
 
 %%
 
@@ -20,20 +21,22 @@ ID {LETRA}({LETRA}|{NUM})*
 
 {DELIM} 	{}
 
-"main"		{return TK_MAIN;}
+"int"|"float"|"char"|"bool"	{ yylval.label = yytext; return TK_TIPO; }
 
-"int"|"float"|"char"|"bool"	{ yylval.label = yytext; return TK_TIPO}
+"var"	{ yylval.label = yytext; return TK_TIPO_INFERIDO; }
 
-"var"	{ yylval.label = yytext; return TK_TIPO_INFERIDO}
-
-"(int)"|"(float)"|"(char)"		{ yylval.label = yytext; return TK_CAST}
+"(int)"|"(float)"|"(char)"		{ yylval.label = yytext; return TK_CAST; }
 
 [(){}[\];,]	{ return *yytext; }
 
-[+\-*/]		{ yylval.traducao = yytext; return TK_OP_MAT; }
+[+\-*/]		{ yylval.traducao = yytext; return TK_OP_ARI; }
+
+"=="|"<"|"<="|">"|">="|"!="		{ yylval.traducao = yytext; return TK_OP_REL; }
 
 
-"&&"|"and"|"||"|"or"|"!"	{return TK_OP_OR;}
+"&&"|"||"|"!"	{return TK_OP_LOG;}
+
+
 
 "="|"*="|"/="|"+="|"=="|"++"|"--"	{yylval.label = yytext; return TK_ATTR; }
 
@@ -43,7 +46,7 @@ ID {LETRA}({LETRA}|{NUM})*
 {CHAR}		{ yylval.label = yytext; yylval.tipo_var = "char"; return TK_CHAR; }
 {BOOL}		{ yylval.label = yytext; yylval.tipo_var = "bool"; return TK_BOOL; }
 {ID}		{ yylval.label = yytext; return TK_ID; }
-{STRING}  { yylval.label = yytext; yylval.tipo_var = "char*"; return TK_STRING; }
+{STRING}    { yylval.label = yytext; yylval.tipo_var = "char*"; return TK_STRING; }
 
 .			{ *yytext; }
 
