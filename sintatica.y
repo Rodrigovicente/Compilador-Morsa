@@ -226,7 +226,14 @@ string remove_aspas(string text){
 
 %start S
 
-%left '+'
+
+%left '='
+%left "||" "&&"
+%left "==" "!="
+%left '<' '>' ">=" "<="
+%left '+' '-'
+%left '*' '/'
+
 
 %%
 
@@ -236,29 +243,32 @@ S 			: INIT_BLOCO BLOCO END_BLOCO
 			}
 			;
 
-INIT_BLOCO	: {
+INIT_BLOCO	:
+			{
 				mapaVariaveis mapVar;
 				pilhaMapas.push_back(mapVar);
 			}
 			;
-END_BLOCO	: {
+END_BLOCO	:
+			{
 				pilhaMapas.pop_back();
 			}
 
 BLOCO		: '{' COMANDOS '}'
 			{
-				$$.traducao = $3.traducao;
+				$$.traducao = $2.traducao;
 			}
 			;
 
 COMANDOS	: COMANDO COMANDOS
 			{
 				$$.traducao = $1.traducao + $2.traducao;
-			}
+			}/*
 			| INIT_BLOCO BLOCO END_BLOCO COMANDOS
 			{
 
-			}
+			}*/
+			|
 			;
 
 COMANDO 	: E ';'
@@ -267,7 +277,7 @@ COMANDO 	: E ';'
   			;
 		//	| BL_CONDICIONAL
 		//	| BL_LOOP
-			
+
 /*
 BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO
 			{
@@ -320,13 +330,6 @@ E 			: '(' E ')'
 			}
 			| TK_CAST E
 			{
-          	// Casting // peida de mudar o casting para outra coisa? tipo (parseInt) (parseFloat) (parseChar) sei la. algo para não ficar muito C LIKE
-              /*
-              	com parentesiiiiiiiiiiiiiiiiiiiiiiiiiis, não é melhor?
-              	int var;
-                var = int: 1.5; << esse é melhor kkkkkk eu sei, mas fica muito C like vamos dar uma divertida na parada. tipo (MorsaInt) KKK
-                a indentação tá uma merda
-              */
             	$$.label = cria_nome_var();
             	$$.traducao = $2.traducao;
 
@@ -335,7 +338,7 @@ E 			: '(' E ')'
                     	$$.tipo_var = "int";
                     	string aux_var = cria_nome_tmp();
                     	$$.traducao += "int " + aux_var + "; \n" + aux_var + " = " + float_to_int($2) + "; \n int " + $$.label + " = " + aux_var + "; \n";
-                      
+
                     } else if($2.tipo_var == "int"){
                       	$$.tipo_var = "int";
                       	$$.traducao += "int " + $$.label + "; \n" + $$.label + " = " + $2.label + "; \n";
@@ -344,7 +347,7 @@ E 			: '(' E ')'
                     	$$.tipo_var = "int";
                       	string aux_var = cria_nome_tmp();
 						$$.traducao += "int " + aux_var + "; \n" + aux_var + " = " + charToInt($2) + "; \n int"  + $$.label + " = " + aux_var + "; \n";
-                      
+
                     } else{
                      	yyerror("ERROR: Não é possível realizar a conversão para este tipo.");
                     }
