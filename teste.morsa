@@ -1,0 +1,12 @@
+{
+    int minhaVar;
+    int minhaVar2;
+    int minhaVar3;
+
+    minhaVar = 3;
+    minhaVar2 = 2;
+    minhaVar3 = minhaVar + minhaVar2;
+
+
+
+}
