@@ -331,7 +331,7 @@ BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO
   				$$.traducao += $1.label + "(" + $3.label + ") goto " + ini_label + ";\n" + "goto " + end_label + ";\n";
                 $$.traducao += ini_label + ": \n" + $6.traducao + "\n" + end_label + ": \n";
   				
-			}
+			}/*
 			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE INIT_BLOCO BLOCO END_BLOCO
 			{
 				string ini_label = pilhaMapas[pilhaMapas.size() - 1].start_block_lb;
@@ -339,7 +339,7 @@ BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO
                 $$.traducao =  $3.traducao;
   				$$.traducao += $1.label + "(" + $3.label + ") goto " + ini_label + ";\n" + "goto " + end_label + ";\n";
                 $$.traducao += ini_label + ": \n" + $6.traducao + "\n" + end_label + ": \n";
-			}
+			}*/
 			;
 
 CONDICAO 	: E
