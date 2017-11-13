@@ -5,7 +5,16 @@ all:
 		yacc -d sintatica.y
 		g++ -std=c++0x -o glf y.tab.c -lfl
 
-		./glf < teste.morsa
+		./glf < ${nome}.morsa
+		
+		
+osx: 		
+		clear
+		lex lexica.l
+		yacc -d sintatica.y
+		g++ -std=c++0x -o glf y.tab.c -lfl
+
+		./glf < ${nome}.morsa
 
 #all:
 #		clear
