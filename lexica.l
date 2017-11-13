@@ -11,7 +11,7 @@ DELIM {ESPACO}+
 NUM {DIGITO}+
 REAL {NUM}+("."{NUM}+)?
 CHAR \'({LETRA}|{NUM})\'
-BOOL "true"|"false"
+BOOL "true"|"false"|"1"|"0"
 ID {LETRA}({LETRA}|{NUM})*
 STRING \"({LETRA}|{NUM})+\"
 
@@ -21,7 +21,7 @@ STRING \"({LETRA}|{NUM})+\"
 
 {DELIM} 	{}
 
-"int"|"float"|"char"|"bool"|"string"	{ yylval.label = yytext; return TK_TIPO; }
+"int"|"float"|"char"|"bool"|"string"	{ yylval.label = yytext; yylval.tipo_var = yytext; return TK_TIPO; }
 
 "var"	{ yylval.label = yytext; return TK_TIPO_INFERIDO; }
 
@@ -34,6 +34,8 @@ STRING \"({LETRA}|{NUM})+\"
 "=="|"<"|"<="|">"|">="|"!="		{ yylval.label = yytext; return TK_OP_REL; }
 
 "if"	{ yylval.label = yytext; return TK_COM_IF; }
+
+"else"	{ yylval.label = yytext; return TK_COM_ELSE; }
 
 
 "&&"|"||"|"!"	{yylval.label = yytext; return TK_OP_LOG;}
@@ -49,7 +51,7 @@ STRING \"({LETRA}|{NUM})+\"
 {CHAR}		{ yylval.label = yytext; yylval.tipo_var = "char"; return TK_CHAR; }
 {BOOL}		{ yylval.label = yytext; yylval.tipo_var = "bool"; return TK_BOOL; }
 {ID}		{ yylval.label = yytext; return TK_ID; }
-{STRING}    { yylval.label = yytext; yylval.tipo_var = "char*"; return TK_STRING; }
+{STRING}    { yylval.label = yytext; yylval.tipo_var = "string"; return TK_STRING; }
 
 .			{ *yytext; }
 
