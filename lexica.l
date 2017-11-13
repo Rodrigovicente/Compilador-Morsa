@@ -21,7 +21,7 @@ STRING \"({LETRA}|{NUM})+\"
 
 {DELIM} 	{}
 
-"int"|"float"|"char"|"bool"	{ yylval.label = yytext; return TK_TIPO; }
+"int"|"float"|"char"|"bool"|"string"	{ yylval.label = yytext; return TK_TIPO; }
 
 "var"	{ yylval.label = yytext; return TK_TIPO_INFERIDO; }
 
@@ -33,9 +33,12 @@ STRING \"({LETRA}|{NUM})+\"
 
 "=="|"<"|"<="|">"|">="|"!="		{ yylval.label = yytext; return TK_OP_REL; }
 
+"if"	{ yylval.label = yytext; return TK_COM_IF; }
+
 
 "&&"|"||"|"!"	{yylval.label = yytext; return TK_OP_LOG;}
 
+"print:"	{ yylval.label = yytext; return TK_PRINT; }
 
 
 "="|"*="|"/="|"+="|"-="|"=="|"++"|"--"	{yylval.label = yytext; return TK_ATTR; }

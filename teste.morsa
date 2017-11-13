@@ -1,12 +1,15 @@
 {
-    int minhaVar;
-    int minhaVar2;
-    int minhaVar3;
+	string minhaVar = "false";
+	
+	bool cond = 1 != 1.0;
 
-    minhaVar = 3;
-    minhaVar2 = 2;
-    minhaVar3 = minhaVar + minhaVar2;
+	if( false && false ) {
 
+		minhaVar = "true";
+
+	}
+
+	print: minhaVar;
 
 
 }
