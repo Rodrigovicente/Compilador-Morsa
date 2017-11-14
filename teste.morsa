@@ -1,15 +1,12 @@
 {
-	string minhaVar = "false";
-	
-	bool cond = 1 != 1.0;
+	string a = "aaaa";
 
-	if( false && false ) {
+	bool cond = a == "aaaa";
 
-		minhaVar = "true";
-
+	if(cond){
+		print: a;
+	} else{
+		print: "nao_foi";
 	}
-
-	print: minhaVar;
-
 
 }

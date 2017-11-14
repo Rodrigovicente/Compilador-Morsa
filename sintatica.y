@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,19 +40,51 @@ static int count_vars = 0;
 static int count_tmps = 0;
 static int count_rots = 0;
 
-
 vector<mapaVariaveis> pilhaMapas;
-/*
-mapaVariaveis mapa_apam;
-
-struct attr teste;
 
 
-teste.nome_var = "aaaaa";
-//atributo_atributos.nome_var = "morsa extinta"
-*/
-//mapa_apam.attrs[0].push_back(atributo_atributos);
-//pilhaMapas.push_back(mapa_apam);
+// relação tipo em morsa - tipo em c
+map<string,string> relacaoTipos = 	{
+										{"int","int"},
+										{"float","float"},
+										{"char","char"},
+										{"bool","int"},
+										{"string","char*"},
+									};
+
+string traducao_tipo(atributos attr){
+	string result;
+
+	result = relacaoTipos.find(attr.tipo_var)->second;
+
+	return result;
+}
+
+bool isConvertivel(atributos attr1, atributos attr2){
+
+	bool result;
+
+	if(attr1.tipo_var == "int" && attr2.tipo_var == "float"){
+		result = true;
+	} else if(attr1.tipo_var == "float" && attr2.tipo_var == "int"){
+		result = true;
+	} else if(attr1.tipo_var == "float" && attr2.tipo_var == "int"){
+		result = true;
+	} else if(attr1.tipo_var == "int" && attr2.tipo_var == "char"){
+		result = true;
+	} else if(attr1.tipo_var == "char" && attr2.tipo_var == "int"){
+		result = true;
+	} else if(attr1.tipo_var == "char" && attr2.tipo_var == "float"){
+		result = true;
+	} else if(attr1.tipo_var == attr2.tipo_var){
+		result = true;
+	} else{
+		result = false;
+	}
+
+	return result;
+}
+
 bool mapasContemVar(atributos variavel){
 	
  	bool result = false;
@@ -113,7 +146,7 @@ atributos mapaGetVar(atributos variavel){
 }
 
 
-bool mapaSetTam(atributos attr, string str_tamanho){
+bool mapaSetTam(string nome_var, string str_tamanho){
 
 	bool saida;
 
@@ -123,9 +156,9 @@ bool mapaSetTam(atributos attr, string str_tamanho){
 	for(i = pilhaMapas.size() - 1; i >= 0; i--){
 		if(!pilhaMapas[i].attrs.empty()){
 			for(j = 0; j < pilhaMapas[i].attrs.size(); j++){
-				if(pilhaMapas[i].attrs[j].nome_var == attr.label){
+				if(pilhaMapas[i].attrs[j].nome_var == nome_var){
 					pilhaMapas[i].attrs[j].str_tamanho = str_tamanho;
-					printf(" --- tamanaho novo: %s\n", pilhaMapas[i].attrs[j].str_tamanho.c_str() );
+					printf(" --- tamanho novo: %s\n", pilhaMapas[i].attrs[j].str_tamanho.c_str() );
 					saida = true;
 					return saida;
 				}
@@ -331,15 +364,22 @@ BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO
   				$$.traducao += $1.label + "(" + $3.label + ") goto " + ini_label + ";\n" + "goto " + end_label + ";\n";
                 $$.traducao += ini_label + ": \n" + $6.traducao + "\n" + end_label + ": \n";
   				
-			}/*
-			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE INIT_BLOCO BLOCO END_BLOCO
+			}
+			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO TK_COM_ELSE INIT_BLOCO BLOCO
 			{
-				string ini_label = pilhaMapas[pilhaMapas.size() - 1].start_block_lb;
-  				string end_label = pilhaMapas[pilhaMapas.size() - 1].end_block_lb;
+				string ini_label_if = pilhaMapas[pilhaMapas.size() - 2].start_block_lb;
+  				string end_label_if = pilhaMapas[pilhaMapas.size() - 2].end_block_lb;
+
+				string ini_label_else = pilhaMapas[pilhaMapas.size() - 1].start_block_lb;
+  				string end_label_else = pilhaMapas[pilhaMapas.size() - 1].end_block_lb;
+
                 $$.traducao =  $3.traducao;
-  				$$.traducao += $1.label + "(" + $3.label + ") goto " + ini_label + ";\n" + "goto " + end_label + ";\n";
-                $$.traducao += ini_label + ": \n" + $6.traducao + "\n" + end_label + ": \n";
-			}*/
+  				$$.traducao += $1.label + "(" + $3.label + ") goto " + ini_label_if + ";\n" + "goto " + ini_label_else + ";\n";
+                $$.traducao += "\n" + ini_label_if + ": \n" + $6.traducao + "goto " + end_label_else + "; \n\n" + ini_label_else + ": \n" + $9.traducao + "\n" + end_label_else + ": \n";
+
+				pilhaMapas.pop_back();
+				pilhaMapas.pop_back();
+			}
 			;
 
 CONDICAO 	: E
@@ -366,14 +406,17 @@ E 			: '(' E ')'
                     $$.tipo_var = "int";
 					if($2.tipo_var == "float"){
                     	string aux_var = cria_nome_tmp();
-                    	$$.traducao += "int " + aux_var + "; \n" + aux_var + " = (int) " + $2.label + "; \n int " + $$.label + " = " + aux_var + "; \n";
+
+                    	$$.traducao += traducao_tipo($$) + " " + aux_var + "; \n" + aux_var + " = (int) " + $2.label + "; \n";
+                    	$$.traducao += "int " + $$.label + "; \n" + $$.label + " = " + aux_var + "; \n";
 
                     } else if($2.tipo_var == "int"){
-                      	$$.traducao += "int " + $$.label + "; \n" + $$.label + " = " + $2.label + "; \n";
+                      	$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + $2.label + "; \n";
 
                     } else if($2.tipo_var == "char"){
                       	string aux_var = cria_nome_tmp();
-						$$.traducao += "int " + aux_var + "; \n" + aux_var + " = (int) " + $2.label + "; \n int "  + $$.label + " = " + aux_var + "; \n";
+						$$.traducao += traducao_tipo($$) + " " + aux_var + "; \n" + aux_var + " = (int) " + $2.label + "; \n";
+						$$.traducao += traducao_tipo($$) + " "  + $$.label + "; \n" + $$.label + " = " + aux_var + "; \n";
 
                     } else{
                      	yyerror("ERROR: Não é possível realizar a conversão para este tipo.");
@@ -383,20 +426,31 @@ E 			: '(' E ')'
                     $$.tipo_var = "float";
                 	if($2.tipo_var == "int"){
                       	string aux_var = cria_nome_tmp();
-                      	$$.traducao += "float " + aux_var + "; \n" + aux_var + " = (float) " + $2.label + "; \n int " + $$.label + " = " + aux_var + "; \n";
+                      	$$.traducao += traducao_tipo($$) + " " + aux_var + "; \n" + aux_var + " = (float) " + $2.label + "; \n";
+                      	$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + aux_var + "; \n";
 
                 	} else if($2.tipo_var == "float"){
-                      	$$.traducao += "float " + $$.label + "; \n" + $$.label + " = " + $2.label + "; \n";
+                      	$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + $2.label + "; \n";
                     } else if($2.tipo_var == "char"){
                       	string aux_var = cria_nome_tmp();
-						$$.traducao += "float " + aux_var + "; \n" + aux_var + " = (float) " + $2.label + "; \n int "  + $$.label + " = " + aux_var + "; \n";
+						$$.traducao += traducao_tipo($$) + " " + aux_var + "; \n" + aux_var + " = (float) " + $2.label + "; \n";
+						$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + aux_var + "; \n";
                     } else{
                      	yyerror("ERROR: Não é possível realizar a conversão para este tipo.");
                     }
                 } else{ // caso cast (char)
-                	if($2.tipo_var == "int" || $2.tipo_var == "float"){
-                    	$$.tipo_var = "char";
-						$$.traducao += "char " + $$.label + "; \n" + $$.label + " = (char) " + $2.label + "; \n";
+                    $$.tipo_var = "char";
+                	if($2.tipo_var == "int" ){
+                      	string aux_var = cria_nome_tmp();
+						$$.traducao += "char " + aux_var + "; \n" + aux_var + " = (char) " + $2.label + "; \nint "  + $$.label + "; \n" + $$.label + " = " + aux_var + "; \n";
+                    } else if($2.tipo_var == "float"){
+                      	string aux_var1 = cria_nome_tmp();
+                      	string aux_var2 = cria_nome_tmp();
+
+						$$.traducao += "int " + aux_var1 + "; \n" + aux_var1 + " = (int) " + $2.label + "; \n";
+						$$.traducao += "char " + aux_var2 + "; \n" + aux_var2 + " = (char) " + aux_var1 + "; \n";
+						$$.traducao += "char "  + $$.label + "; \n" + $$.label + " = " + aux_var2 + "; \n";
+
                     } else{
                      	yyerror("ERROR: Não é possível realizar a conversão para este tipo.");
                     }
@@ -406,7 +460,7 @@ E 			: '(' E ')'
 			| E TK_OP_ARI E
 			{
 				// + - * /
-				$$.label = cria_nome_var();
+				$$.label = cria_nome_tmp();
 				$$.traducao = $1.traducao + $3.traducao;
 
 				// para numeros
@@ -451,16 +505,23 @@ E 			: '(' E ')'
 
                     		// CONTINUAR ?
 
-                		}else if($1.tipo_var == "char*" && $3.tipo_var == "char*"){
-                			string aux_var = cria_nome_tmp();
-                          
-                			$$.traducao += "char* " + aux_var + "; \n" + aux_var + " = (char*) malloc( (" + $1.str_tamanho + " + " + $3.str_tamanho + ") * sizeof(char));\nstrcpy( " + aux_var + ", " + $1.label + " ); \n";
-                          	string aux_var2 = cria_nome_tmp();
-                          	
-                          	$$.traducao += "char* " + aux_var2 + "; \n" + aux_var2 + " = " + aux_var + " + ( " + $1.str_tamanho + " * sizeof(char)); \nstrcpy( " + aux_var2 + ", " + $3.label+ "); \n";
-							$$.traducao += "char* "	 + $$.label + "; \n" + $$.label + " = (char*) malloc( (" + $1.str_tamanho + " + " + $3.str_tamanho + ") * sizeof(char));\nstrcpy( " + $$.label + ", " + aux_var + " ); \n"; 
-                          	
+                		}else if($1.tipo_var == "string" && $3.tipo_var == "string"){
 							$$.str_tamanho = to_string(stoi($1.str_tamanho) + stoi($3.str_tamanho));
+                			
+							string aux_var1 = cria_nome_tmp();
+							string aux_var2 = cria_nome_tmp();
+							string aux_var3 = cria_nome_tmp();
+							string aux_var4 = cria_nome_tmp();
+							string aux_var5 = cria_nome_tmp();
+
+							$$.traducao += "int " + aux_var1 + "; \n" + aux_var1 + " = " + $1.str_tamanho + " + " + $3.str_tamanho + "; \n";
+							$$.traducao += "int " + aux_var2 + "; \n" + aux_var2 + " = " + aux_var1 + " * sizeof(char); \n";
+							$$.traducao += "int " + aux_var3 + "; \n" + aux_var3 + " = " + $1.str_tamanho + " * sizeof(char); \n";
+
+                			$$.traducao += "char* " + aux_var4 + "; \n" + aux_var4 + " = (char*) malloc( " + aux_var2 + " ); \nstrcpy( " + aux_var4 + ", " + $1.label + " ); \n";
+                			$$.traducao += "char* " + aux_var5 + "; \n" + aux_var5 + " = " + aux_var4 + " + " + aux_var3 + "; \nstrcpy( " + aux_var5 + ", " + $3.label + " ); \n";
+							$$.traducao += "char* " + $$.label + "; \n" + $$.label + " = (char*) malloc( " + aux_var2 + " ); \nstrcpy( " + $$.label + ", " + aux_var4 + " ); \n";
+							$$.traducao += "free(" + aux_var4 + "); \n";
 
                 		} else{
                     		yyerror("ERRO: Não é possivel realizar operações aritméticas entre estes tipos de expressões.");
@@ -475,11 +536,12 @@ E 			: '(' E ')'
 			| E TK_OP_LOG E
 			{
 				// && ||
+				// MUDEI bool para int
                 $$.label = cria_nome_var();
                 $$.tipo_var = "bool";
                 $$.traducao = $1.traducao + $3.traducao;
 				if($1.tipo_var == "bool" && $3.tipo_var == "bool" && $2.label != "!"){
-                	$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + " " + $2.label + " " + $3.label + "; \n";
+                	$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + $1.label + " " + $2.label + " " + $3.label + "; \n";
 				} else{
                     if($2.label != "!"){
 						yyerror("ERRO: Esta operação lógica deve ser realizada entre duas expressões.");
@@ -491,11 +553,12 @@ E 			: '(' E ')'
             | TK_OP_LOG E
             {
              	// !
+             	// MUDEI bool para int
               	$$.tipo_var = "bool";
               	$$.label = cria_nome_var();
                 $$.traducao = $2.traducao;
 				if($2.tipo_var == "bool" && $1.label == "!"){
-                	$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = !" + $2.label + "; \n";
+                	$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = !" + $2.label + "; \n";
 				} else{
                     if($1.label != "!"){
 						yyerror("ERRO: Esta operação lógica não pode ser realizada entre duas expressões.");
@@ -515,66 +578,85 @@ E 			: '(' E ')'
 				}
 
 			}
-			| TK_NUM
+			| PRIMITIVA
+			;
+
+PRIMITIVA	: TK_NUM
 			{
-				$$ = $1;
-				$$.label = cria_nome_var();
+				//$$ = $1;
+				$$.label = cria_nome_tmp();
               	$$.tipo_var = "int";
 				$$.traducao = $1.tipo_var + " " + $$.label + "; \n" + $$.label + " = " + $1.label + "; \n";
 			}
 			| TK_REAL
 			{
-				$$ = $1;
-				$$.label = cria_nome_var();
+				//$$ = $1;
               	$$.tipo_var = "float";
-				$$.traducao = $1.tipo_var + " " + $$.label + "; \n" + $$.label + " = " + $1.label + "; \n";
+				$$.label = cria_nome_tmp();
+				$$.traducao = traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + $1.label + "; \n";
 			}
 			| TK_CHAR
 			{
+				//$$ = $1;
               	$$.tipo_var = "char";
-				$$ = $1;
-				$$.label = cria_nome_var();
-				$$.traducao = $1.tipo_var + " " + $$.label + "; \n" + $$.label + " = " + $1.label + "; \n";
+				$$.label = cria_nome_tmp();
+				$$.traducao = traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + $1.label + "; \n";
 			}
 			| TK_BOOL
 			{
+				//$$ = $1;
               	$$.tipo_var = "bool";
-				$$ = $1;
-				$$.label = cria_nome_var();
-				$$.traducao = $1.tipo_var + " " + $$.label + "; \n" + $$.label + " = " + $1.label + "; \n";
+				$$.label = cria_nome_tmp();
+				string aux_var;
+				if($1.label == "true" || $1.label == "1"){
+					aux_var = "1";
+				} else{
+					aux_var = "0";
+				}
+				$$.traducao = traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + aux_var + "; \n";
 			}
 			| TK_STRING
 			{
-              	$$.tipo_var = "char*";
-				$$ = $1;
-				$$.label = cria_nome_var();
+				//$$ = $1;
+              	$$.tipo_var = "string";
+				$$.label = cria_nome_tmp();
 				$$.str_tamanho = to_string($1.label.size() -2);
-              	//string aux_var = remove_aspas($1.label);
-              	//como o itoa não funciona, teremos de mudar
-              	// itoa($1.label.size() - 2)
-				$$.traducao = "char* " + $$.label + "; \n" + $$.label + " = (char*) malloc(" + $$.str_tamanho + " * sizeof(char)); \nstrcpy( " + $$.label + ", " + $1.label + "); \n";
+				$$.traducao = traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = (char*) malloc(" + $$.str_tamanho + " * sizeof(char)); \nstrcpy( " + $$.label + ", " + $1.label + "); \n";
 			}
 			;
 
+			// MUDEI de bool para int
 OP_RELACIONAL 	: E TK_OP_REL E 	//OPERAÇÕES RELACIONAIS
 			{
 				// > >= < <= == !=
 				$$.tipo_var = "bool";
-				$$.label = cria_nome_var();
+				$$.label = cria_nome_tmp();
                 $$.traducao = $1.traducao + $3.traducao;
 
 				if($1.tipo_var == $3.tipo_var){ //caso sejam de tipos iguais
 					if($2.label == "==" || $2.label == "!="){
-						$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + $3.label + "; \n";
+						$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + $3.label + "; \n";
 					} else{
 						if($1.tipo_var == "char" || $1.tipo_var == "float" || $1.tipo_var == "int" ){
-							$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + $3.label + "; \n";
+							$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + $3.label + "; \n";
 						}
 					}
 
 				} else{ //caso sejam de tipos diferentes
-					if(($1.tipo_var == "int" && $3.tipo_var == "float") || ($1.tipo_var == "float" && $3.tipo_var == "int")){
-						$$.traducao += "bool " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + $3.label + "; \n";
+					if($1.tipo_var == "int" && $3.tipo_var == "float"){
+						string aux_var1 = traducao_tipo($3);
+						string aux_var2 = cria_nome_tmp();
+
+						$$.traducao += aux_var1 + " " + aux_var2 + "; \n" + aux_var2 + " = (" + aux_var1 + ") " +  $1.label + "; \n";
+						$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + aux_var2 + $2.label + $3.label + "; \n";
+
+					} else if($1.tipo_var == "float" && $3.tipo_var == "int"){
+						string aux_var1 = traducao_tipo($1);
+						string aux_var2 = cria_nome_tmp();
+
+						$$.traducao += aux_var1 + " " + aux_var2 + "; \n" + aux_var2 + " = (" + aux_var1 + ") " +  $3.label + "; \n";
+						$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + $1.label + $2.label + aux_var2 + "; \n";
+
                     } else{
                     	yyerror("ERRO: Não é possível realizar esta operação entres estes tipos de variáveis.");
                     }
@@ -588,49 +670,113 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 				$$ = mapaGetVar($1);
 
 				if($$.label == "!morsa"){
-					yyerror("ERRO-1: Não existe uma variável com este nome.");
+					yyerror("ERRO: Não existe uma variável com este nome.");
 				} else{
 					if($2.label == "="){
-						if($$.tipo_var == "char*" && $3.tipo_var == "char*"){
+						if($$.tipo_var == "string" && $3.tipo_var == "string"){
 							$$.traducao = $3.traducao;
-							if($$.str_tamanho == "0"){
-								$$.traducao += $$.label + " = (char*) malloc( " + $3.str_tamanho + " * sizeof(char) ); \n";
+							if($$.str_tamanho == "!morsa"){
+								string aux_var = cria_nome_tmp();
+
+								$$.traducao += "int " + aux_var + "; \n" + aux_var + " = " + $3.str_tamanho + " * sizeof(char); \n";
+								$$.traducao += $$.label + " = (char*) malloc( " + aux_var + " ); \n";
 							} else{
-								$$.traducao += $$.label + " = (char*) realloc( " + $$.label + ", (" + $$.str_tamanho + " + " + $3.str_tamanho + ") * sizeof(char) ); \n";
+								string aux_var1 = cria_nome_tmp();
+								string aux_var2 = cria_nome_tmp();
+
+								$$.traducao += "int " + aux_var1 + "; \n" + aux_var1 + " = " + $$.str_tamanho + " + " + $3.str_tamanho + "; \n";
+								$$.traducao += "int " + aux_var2 + "; \n" + aux_var2 + " = " + aux_var1 + " * sizeof(char); \n";
+								$$.traducao += $$.label + " = (char*) realloc( " + $$.label + ", " + aux_var2 + " ); \n";
 
 							}
-							$$.traducao += "strcpy(" + $$.label + ", " + $3.label + "); \n";
+							if($3.traducao == ""){
+								$$.traducao += "strcpy(" + $$.label + ", " + $3.label + "); \n";
 
-							//$$.str_tamanho = $3.str_tamanho;
-							mapaSetTam($1, $3.str_tamanho);
+							} else{
+								$$.traducao += "strcpy(" + $$.label + ", " + $3.label + "); \nfree(" + $3.label + "); \n";
+
+							}
+
+							mapaSetTam($1.label, $3.str_tamanho);
 
 						} else{
 							$$.traducao = $3.traducao;
-							$$.traducao += $$.label + " = " + $3.label + "; \n";
+
+							if($$.tipo_var == $3.tipo_var){
+								$$.traducao += $$.label + " = " + $3.label + "; \n";
+
+							} else{
+								if(isConvertivel($$, $3)){
+									string aux_var1 = traducao_tipo($$);
+									string aux_var2 = cria_nome_tmp();
+
+									$$.traducao += aux_var1 + " " + aux_var2 + "; \n" + aux_var2 + " = (" + aux_var1 + ") " + $3.label + "; \n";
+									$$.traducao += $$.label + " = " + aux_var2 + "; \n";
+								} else{
+									yyerror("ERRO: Os tipos das variáveis ou expressões não são compatíveis para atribuição.");
+
+								}
+							}
 						}
 
-						/*
-                        	CONTINUAR
-							DÚVIDA: nesta parte de atribuição pode ser usado a conversão implicita do C, ou se o E tiver um tipo diferendo do TK_ID deve ser
-							feita uma conversão?
-						*/
-
 					} else{
-						if(($$.tipo_var == "int" || $$.tipo_var == "float") && ($$.tipo_var == "int" || $$.tipo_var == "float")){
-							if($2.label == "*="){
-								$$.traducao = $3.traducao;
-								$$.traducao += $$.label + " = " + $$.label + " * " + $3.label + "; \n";
-							} else if($2.label == "/="){
-								$$.traducao = $3.traducao;
-								$$.traducao += $$.label + " = " + $$.label + " / " + $3.label + "; \n";
-							} else if($2.label == "+="){
-								$$.traducao = $3.traducao;
-								$$.traducao += $$.label + " = " + $$.label + " + " + $3.label + "; \n";
-							} else if($2.label == "-="){
-								$$.traducao = $3.traducao;
-								$$.traducao += $$.label + " = " + $$.label + " - " + $3.label + "; \n";
+						if(($$.tipo_var == "int" || $$.tipo_var == "float") && ($3.tipo_var == "int" || $3.tipo_var == "float")){
+							
+							$$.traducao = $3.traducao;
+
+							if($$.tipo_var == $3.tipo_var){
+
+								if($2.label == "*="){
+									$$.traducao += $$.label + " = " + $$.label + " * " + $3.label + "; \n";
+
+								} else if($2.label == "/="){
+									$$.traducao += $$.label + " = " + $$.label + " / " + $3.label + "; \n";
+
+								} else if($2.label == "+="){
+									$$.traducao += $$.label + " = " + $$.label + " + " + $3.label + "; \n";
+
+								} else if($2.label == "-="){
+									$$.traducao += $$.label + " = " + $$.label + " - " + $3.label + "; \n";
+
+								} else{
+									yyerror("ERRO: A operação de atribuição não é válida.");
+								}
+
 							} else{
-								yyerror("ERRO: A operação de atribuição não é válida.");
+
+								string aux_var1 = traducao_tipo($$);
+								string aux_var2 = cria_nome_tmp();
+
+								if($2.label == "*="){
+									$$.traducao += aux_var1 + " " + aux_var2 + "; \n" + aux_var2 + " = (" + aux_var1 + ") " + $3.label + "; \n";
+									$$.traducao += $$.label + " = " + $$.label + " * " + aux_var2 + "; \n";
+
+								} else if($2.label == "/="){
+									if($$.tipo_var == "int"){
+										string aux_var3 = cria_nome_tmp();
+
+										$$.traducao += "float " + aux_var2 + "; \n" + aux_var2 + " = (float) " + $$.label + "; \n";
+										$$.traducao += "float " + aux_var3 + "; \n" + aux_var3 + " = " + aux_var2 + " / " + $3.label + "; \n";
+										$$.traducao += $$.label + " = (" + aux_var1 + ") " + aux_var3 + "; \n";
+
+									} else{
+										$$.traducao += aux_var1 + " " + aux_var2 + "; \n" + aux_var2 + " = (" + aux_var1 + ") " + $3.label + "; \n";
+										$$.traducao += $$.label + " = " + $$.label + " / " + aux_var2 + "; \n";
+
+									}
+
+								} else if($2.label == "+="){
+									$$.traducao += aux_var1 + " " + aux_var2 + "; \n" + aux_var2 + " = (" + aux_var1 + ") " + $3.label + "; \n";
+									$$.traducao += $$.label + " = " + $$.label + " + " + aux_var2 + "; \n";
+
+								} else if($2.label == "-="){
+									$$.traducao += aux_var1 + " " + aux_var2 + "; \n" + aux_var2 + " = (" + aux_var1 + ") " + $3.label + "; \n";
+									$$.traducao += $$.label + " = " + $$.label + " - " + aux_var2 + "; \n";
+
+								} else{
+									yyerror("ERRO: A operação de atribuição não é válida.");
+								}
+
 							}
 						} else {
 							yyerror("ERRO: Os tipos das variáveis ou expressões não são válidos para a operação (ao menos uma não é float ou int).");
@@ -644,15 +790,38 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 			| DECLARACAO TK_ATTR E
 			{
 				if($2.label == "="){
-                    if($$.tipo_var == "string" && $3.tipo_var == "char*"){
-                        $$.traducao = $1.traducao + $3.traducao;
-                        $$.traducao += "strcpy(" + $$.label + ", " + $3.label + "); \n";
-						$$.str_tamanho = $3.str_tamanho;
+					if($$.tipo_var == "string" && $3.tipo_var == "string"){
+						$$.traducao = $1.traducao + $3.traducao;
+						if($$.str_tamanho == "!morsa"){
+							string aux_var = cria_nome_tmp();
 
-                    } else{
-                        $$.traducao = $1.traducao + $3.traducao;
-                        $$.traducao += $$.label + " = " + $3.label + "; \n";
-                    }
+							$$.traducao += "int " + aux_var + "; \n" + aux_var + " = " + $3.str_tamanho + " * sizeof(char); \n";
+							$$.traducao += $$.label + " = (char*) malloc( " + aux_var + " ); \n";
+						
+						} else{
+							string aux_var1 = cria_nome_tmp();
+							string aux_var2 = cria_nome_tmp();
+
+							$$.traducao += "int " + aux_var1 + "; \n" + aux_var1 + " = " + $$.str_tamanho + " + " + $3.str_tamanho + "; \n";
+							$$.traducao += "int " + aux_var2 + "; \n" + aux_var2 + " = " + aux_var1 + " * sizeof(char); \n";
+							$$.traducao += $$.label + " = (char*) realloc( " + $$.label + ", " + aux_var2 + " ); \n";
+
+						}
+						if($3.traducao == ""){
+							$$.traducao += "strcpy(" + $$.label + ", " + $3.label + "); \n";
+
+						} else{
+							$$.traducao += "strcpy(" + $$.label + ", " + $3.label + "); \nfree(" + $3.label + "); \n";
+
+						}
+
+						//$$.str_tamanho = $3.str_tamanho;
+						mapaSetTam($1.nome_var, $3.str_tamanho);
+
+					} else{
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.traducao += $$.label + " = " + $3.label + "; \n";
+					}
 
 						/*
                         	CONTINUAR
@@ -704,16 +873,15 @@ DECLARACAO	: TK_TIPO TK_ID
 				$$ = mapaGetVar($2);
 
 				if($$.label == "!morsa"){
-					$$.nome_var = $2.label;
 					$$.label = cria_nome_var();
-					if($1.label != "string"){
-						$$.tipo_var = $1.label;
-          				$$.traducao = $$.tipo_var + " " + $$.label + "; \n";
-					} else{
-						$$.tipo_var = "char*";
-          				$$.traducao = "char* " + $$.label + "; \n";
-          				$$.str_tamanho = "0";
+					$$.nome_var = $2.label;
+					$$.tipo_var = $1.label;
+          			$$.traducao = traducao_tipo($$) + " " + $$.label + "; \n";
+
+					if($1.label == "string"){
+          				$$.str_tamanho = "!morsa";
 					}
+
 					mapasAddVar($$);
 				} else{
 					yyerror("ERRO: Já existe uma variável com este nome.");
@@ -728,11 +896,16 @@ DECLARACAO	: TK_TIPO TK_ID
 					$$ = mapaGetVar($2);
 
 					if($$.label == "!morsa"){
-						$$.nome_var = $2.label;
 						$$.label = cria_nome_var();
+						$$.nome_var = $2.label;
 	          			$$.tipo_var = $4.tipo_var;
 						$$.traducao = $4.traducao;
-	                    $$.traducao += $$.tipo_var + " " + $$.label + "; \n" + $$.label + " = " + $4.label + "; \n";
+	                    $$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + $4.label + "; \n";
+
+						if($4.tipo_var == "string"){
+	          				$$.str_tamanho = $4.str_tamanho;
+						}
+	                    
 						mapasAddVar($$);
 					} else{
 						yyerror("ERRO: Já existe uma variável com este nome.");
@@ -753,6 +926,11 @@ PRINT	: TK_PRINT E
 		{
 			$$.traducao = $2.traducao;
 			$$.traducao += "cout << " + $2.label + " << endl; \n";
+
+			if($2.traducao != ""){
+				$$.traducao += "free(" + $2.label + "); \n";
+
+			}
         }
         ;
 
