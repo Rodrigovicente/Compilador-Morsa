@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,6 +56,31 @@ string traducao_tipo(atributos attr){
 	string result;
 
 	result = relacaoTipos.find(attr.tipo_var)->second;
+
+	return result;
+}
+
+bool isConvertivel(atributos attr1, atributos attr2){
+
+	bool result;
+
+	if(attr1.tipo_var == "int" && attr2.tipo_var == "float"){
+		result = true;
+	} else if(attr1.tipo_var == "float" && attr2.tipo_var == "int"){
+		result = true;
+	} else if(attr1.tipo_var == "float" && attr2.tipo_var == "int"){
+		result = true;
+	} else if(attr1.tipo_var == "int" && attr2.tipo_var == "char"){
+		result = true;
+	} else if(attr1.tipo_var == "char" && attr2.tipo_var == "int"){
+		result = true;
+	} else if(attr1.tipo_var == "char" && attr2.tipo_var == "float"){
+		result = true;
+	} else if(attr1.tipo_var == attr2.tipo_var){
+		result = true;
+	} else{
+		result = false;
+	}
 
 	return result;
 }
@@ -400,13 +426,15 @@ E 			: '(' E ')'
                     $$.tipo_var = "float";
                 	if($2.tipo_var == "int"){
                       	string aux_var = cria_nome_tmp();
-                      	$$.traducao += traducao_tipo($$) + " " + aux_var + "; \n" + aux_var + " = (float) " + $2.label + "; \nint " + $$.label + "; \n" + $$.label + " = " + aux_var + "; \n";
+                      	$$.traducao += traducao_tipo($$) + " " + aux_var + "; \n" + aux_var + " = (float) " + $2.label + "; \n";
+                      	$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + aux_var + "; \n";
 
                 	} else if($2.tipo_var == "float"){
                       	$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + $2.label + "; \n";
                     } else if($2.tipo_var == "char"){
                       	string aux_var = cria_nome_tmp();
-						$$.traducao += traducao_tipo($$) + " " + aux_var + "; \n" + aux_var + " = (float) " + $2.label + "; \nint "  + $$.label + "; \n" + $$.label + " = " + aux_var + "; \n";
+						$$.traducao += traducao_tipo($$) + " " + aux_var + "; \n" + aux_var + " = (float) " + $2.label + "; \n";
+						$$.traducao += traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = " + aux_var + "; \n";
                     } else{
                      	yyerror("ERROR: Não é possível realizar a conversão para este tipo.");
                     }
@@ -421,7 +449,7 @@ E 			: '(' E ')'
 
 						$$.traducao += "int " + aux_var1 + "; \n" + aux_var1 + " = (int) " + $2.label + "; \n";
 						$$.traducao += "char " + aux_var2 + "; \n" + aux_var2 + " = (char) " + aux_var1 + "; \n";
-						$$.traducao += "int "  + $$.label + "; \n" + $$.label + " = " + aux_var + "; \n";
+						$$.traducao += "char "  + $$.label + "; \n" + $$.label + " = " + aux_var2 + "; \n";
 
                     } else{
                      	yyerror("ERROR: Não é possível realizar a conversão para este tipo.");
@@ -432,7 +460,7 @@ E 			: '(' E ')'
 			| E TK_OP_ARI E
 			{
 				// + - * /
-				$$.label = cria_nome_var();
+				$$.label = cria_nome_tmp();
 				$$.traducao = $1.traducao + $3.traducao;
 
 				// para numeros
@@ -477,16 +505,23 @@ E 			: '(' E ')'
 
                     		// CONTINUAR ?
 
-                		}else if($1.tipo_var == "char*" && $3.tipo_var == "char*"){
+                		}else if($1.tipo_var == "string" && $3.tipo_var == "string"){
 							$$.str_tamanho = to_string(stoi($1.str_tamanho) + stoi($3.str_tamanho));
                 			
-                			string aux_var = cria_nome_tmp();
-                			$$.traducao += "char* " + aux_var + "; \n" + aux_var + " = (char*) malloc( (" + $1.str_tamanho + " + " + $3.str_tamanho + ") * sizeof(char));\nstrcpy( " + aux_var + ", " + $1.label + " ); \n";
-                          	
-                          	string aux_var2 = cria_nome_tmp();
-                          	$$.traducao += "char* " + aux_var2 + "; \n" + aux_var2 + " = " + aux_var + " + ( " + $1.str_tamanho + " * sizeof(char)); \nstrcpy( " + aux_var2 + ", " + $3.label+ "); \n";
-							
-							$$.traducao += "char* "	 + $$.label + "; \n" + $$.label + " = (char*) malloc( (" + $1.str_tamanho + " + " + $3.str_tamanho + ") * sizeof(char));\nstrcpy( " + $$.label + ", " + aux_var + " ); \n"; 
+							string aux_var1 = cria_nome_tmp();
+							string aux_var2 = cria_nome_tmp();
+							string aux_var3 = cria_nome_tmp();
+							string aux_var4 = cria_nome_tmp();
+							string aux_var5 = cria_nome_tmp();
+
+							$$.traducao += "int " + aux_var1 + "; \n" + aux_var1 + " = " + $1.str_tamanho + " + " + $3.str_tamanho + "; \n";
+							$$.traducao += "int " + aux_var2 + "; \n" + aux_var2 + " = " + aux_var1 + " * sizeof(char); \n";
+							$$.traducao += "int " + aux_var3 + "; \n" + aux_var3 + " = " + $1.str_tamanho + " * sizeof(char); \n";
+
+                			$$.traducao += "char* " + aux_var4 + "; \n" + aux_var4 + " = (char*) malloc( " + aux_var2 + " ); \nstrcpy( " + aux_var4 + ", " + $1.label + " ); \n";
+                			$$.traducao += "char* " + aux_var5 + "; \n" + aux_var5 + " = " + aux_var4 + " + " + aux_var3 + "; \nstrcpy( " + aux_var5 + ", " + $3.label + " ); \n";
+							$$.traducao += "char* " + $$.label + "; \n" + $$.label + " = (char*) malloc( " + aux_var2 + " ); \nstrcpy( " + $$.label + ", " + aux_var4 + " ); \n";
+							$$.traducao += "free(" + aux_var4 + "); \n";
 
                 		} else{
                     		yyerror("ERRO: Não é possivel realizar operações aritméticas entre estes tipos de expressões.");
@@ -543,7 +578,10 @@ E 			: '(' E ')'
 				}
 
 			}
-			| TK_NUM
+			| PRIMITIVA
+			;
+
+PRIMITIVA	: TK_NUM
 			{
 				//$$ = $1;
 				$$.label = cria_nome_tmp();
@@ -583,8 +621,6 @@ E 			: '(' E ')'
               	$$.tipo_var = "string";
 				$$.label = cria_nome_tmp();
 				$$.str_tamanho = to_string($1.label.size() -2);
-              	//como o itoa não funciona, teremos de mudar
-              	// itoa($1.label.size() - 2)
 				$$.traducao = traducao_tipo($$) + " " + $$.label + "; \n" + $$.label + " = (char*) malloc(" + $$.str_tamanho + " * sizeof(char)); \nstrcpy( " + $$.label + ", " + $1.label + "); \n";
 			}
 			;
@@ -639,7 +675,7 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 					if($2.label == "="){
 						if($$.tipo_var == "string" && $3.tipo_var == "string"){
 							$$.traducao = $3.traducao;
-							if($$.str_tamanho == "-1"){
+							if($$.str_tamanho == "!morsa"){
 								string aux_var = cria_nome_tmp();
 
 								$$.traducao += "int " + aux_var + "; \n" + aux_var + " = " + $3.str_tamanho + " * sizeof(char); \n";
@@ -653,9 +689,14 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 								$$.traducao += $$.label + " = (char*) realloc( " + $$.label + ", " + aux_var2 + " ); \n";
 
 							}
-							$$.traducao += "strcpy(" + $$.label + ", " + $3.label + "); \nfree(" + $3.label + "); \n";
+							if($3.traducao == ""){
+								$$.traducao += "strcpy(" + $$.label + ", " + $3.label + "); \n";
 
-							//$$.str_tamanho = $3.str_tamanho;
+							} else{
+								$$.traducao += "strcpy(" + $$.label + ", " + $3.label + "); \nfree(" + $3.label + "); \n";
+
+							}
+
 							mapaSetTam($1.label, $3.str_tamanho);
 
 						} else{
@@ -677,12 +718,6 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 								}
 							}
 						}
-
-						/*
-                        	CONTINUAR
-							DÚVIDA: nesta parte de atribuição pode ser usado a conversão implicita do C, ou se o E tiver um tipo diferendo do TK_ID deve ser
-							feita uma conversão?
-						*/
 
 					} else{
 						if(($$.tipo_var == "int" || $$.tipo_var == "float") && ($3.tipo_var == "int" || $3.tipo_var == "float")){
@@ -757,13 +792,28 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 				if($2.label == "="){
 					if($$.tipo_var == "string" && $3.tipo_var == "string"){
 						$$.traducao = $1.traducao + $3.traducao;
-						if($$.str_tamanho == "-1"){
-							$$.traducao += $$.label + " = (char*) malloc( " + $3.str_tamanho + " * sizeof(char) ); \n";
+						if($$.str_tamanho == "!morsa"){
+							string aux_var = cria_nome_tmp();
+
+							$$.traducao += "int " + aux_var + "; \n" + aux_var + " = " + $3.str_tamanho + " * sizeof(char); \n";
+							$$.traducao += $$.label + " = (char*) malloc( " + aux_var + " ); \n";
+						
 						} else{
-							$$.traducao += $$.label + " = (char*) realloc( " + $$.label + ", (" + $$.str_tamanho + " + " + $3.str_tamanho + ") * sizeof(char) ); \n";
+							string aux_var1 = cria_nome_tmp();
+							string aux_var2 = cria_nome_tmp();
+
+							$$.traducao += "int " + aux_var1 + "; \n" + aux_var1 + " = " + $$.str_tamanho + " + " + $3.str_tamanho + "; \n";
+							$$.traducao += "int " + aux_var2 + "; \n" + aux_var2 + " = " + aux_var1 + " * sizeof(char); \n";
+							$$.traducao += $$.label + " = (char*) realloc( " + $$.label + ", " + aux_var2 + " ); \n";
 
 						}
-						$$.traducao += "strcpy(" + $$.label + ", " + $3.label + "); \n";
+						if($3.traducao == ""){
+							$$.traducao += "strcpy(" + $$.label + ", " + $3.label + "); \n";
+
+						} else{
+							$$.traducao += "strcpy(" + $$.label + ", " + $3.label + "); \nfree(" + $3.label + "); \n";
+
+						}
 
 						//$$.str_tamanho = $3.str_tamanho;
 						mapaSetTam($1.nome_var, $3.str_tamanho);
@@ -829,7 +879,7 @@ DECLARACAO	: TK_TIPO TK_ID
           			$$.traducao = traducao_tipo($$) + " " + $$.label + "; \n";
 
 					if($1.label == "string"){
-          				$$.str_tamanho = "-1";
+          				$$.str_tamanho = "!morsa";
 					}
 
 					mapasAddVar($$);
@@ -876,6 +926,11 @@ PRINT	: TK_PRINT E
 		{
 			$$.traducao = $2.traducao;
 			$$.traducao += "cout << " + $2.label + " << endl; \n";
+
+			if($2.traducao != ""){
+				$$.traducao += "free(" + $2.label + "); \n";
+
+			}
         }
         ;
 
