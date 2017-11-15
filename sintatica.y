@@ -23,6 +23,8 @@ struct attr
 	string tipo_var;
 	string nome_var;
 	string str_tamanho;
+	string start_block_lb;
+	string end_block_lb;
 };
 typedef struct attr atributos;
 
@@ -41,6 +43,7 @@ static int count_tmps = 0;
 static int count_rots = 0;
 
 vector<mapaVariaveis> pilhaMapas;
+vector<atributos> pilhaDeclaracao;
 
 
 // relação tipo em morsa - tipo em c
@@ -49,7 +52,7 @@ map<string,string> relacaoTipos = 	{
 										{"float","float"},
 										{"char","char"},
 										{"bool","int"},
-										{"string","char*"},
+										{"string","char*"}
 									};
 
 string traducao_tipo(atributos attr){
@@ -104,14 +107,22 @@ bool mapasContemVar(atributos variavel){
 	return result;
 }
 
+void declaraoAddVar(atributos variavel){
+	
+	pilhaDeclaracao.push_back(variavel);
+
+	printf("ADICIONEI PARA DECLARAR: %s - total: %d\n",pilhaDeclaracao[pilhaDeclaracao.size()-1].nome_var.c_str(), pilhaDeclaracao.size());
+
+}
+
 bool mapasAddVar(atributos variavel){
   	bool aux;
   	aux = mapasContemVar(variavel);
 	if(!aux){
 		pilhaMapas[pilhaMapas.size()-1].attrs.push_back(variavel);
-
 		printf("ADICIONEI NO MAPA: %d\n",pilhaMapas[pilhaMapas.size()-1].attrs.size() );
 
+		declaraoAddVar(variavel);
 		return true;
 	} else{
 		printf("NAO ADICIONEI NO MAPA\n" );
@@ -237,6 +248,7 @@ string cria_nome_rot(){
 %token TK_COM_DO
 %token TK_ATTR
 %token TK_PRINT
+%token TK_ENDL
 
 %nonassoc TK_COM_IF
 
@@ -269,20 +281,23 @@ INIT_BLOCO	:
               	mapVar.start_block_lb = cria_nome_rot();
                 mapVar.end_block_lb = cria_nome_rot();
 				pilhaMapas.push_back(mapVar);
-				printf("CRIEI UM MAPA\n" );
+
+				$$.start_block_lb = mapVar.start_block_lb;
+				$$.end_block_lb = mapVar.end_block_lb;
+
+				printf("+++CRIEI UM MAPA com rotulo: %s\n", pilhaMapas[pilhaMapas.size()-1].start_block_lb.c_str() );
 			}
 			;
 END_BLOCO	:
 			{
+				printf("---TIREI UM MAPA com rotulo: %s\n", pilhaMapas[pilhaMapas.size()-1].start_block_lb.c_str() );
 				pilhaMapas.pop_back();
-				
-				printf("TIREI UM MAPA\n" );
 			}
 
 BLOCO		: '{' COMANDOS '}'
 			{
 				$$.traducao = $2.traducao;
-				printf("CRIEI UM BLOCO COM NIVEL: %d\n", pilhaMapas.size()-1);
+				printf("CRIEI UM BLOCO COM NIVEL: %d\n", pilhaMapas.size());
 			}
 			;
 
@@ -303,6 +318,7 @@ COMANDO 	: E ';'
 			| ATTR ';'
 			| PRINT ';'
 			| BL_CONDICIONAL
+			| BL_LOOP
   			;
 
 CONDICAO 	: E
@@ -315,10 +331,10 @@ CONDICAO 	: E
 			}
 			;
 
-BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO
+BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO	// IF
 			{
-				string ini_label = pilhaMapas[pilhaMapas.size() - 1].start_block_lb;
-  				string end_label = pilhaMapas[pilhaMapas.size() - 1].end_block_lb;
+				string ini_label = $5.start_block_lb;
+  				string end_label = $5.end_block_lb;
               	
               	$$.end_block_lb = end_label;
   
@@ -327,37 +343,35 @@ BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO
                 $$.traducao += "\n" + ini_label + ": \n" + $6.traducao + "\n" + end_label + ": \n";
   				
 			}
-			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO TK_COM_ELSE INIT_BLOCO BLOCO
+			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE INIT_BLOCO BLOCO END_BLOCO 	//IF ELSE
 			{
-				string ini_label_else = pilhaMapas[pilhaMapas.size() - 1].start_block_lb;
-  				string end_label_else = pilhaMapas[pilhaMapas.size() - 1].end_block_lb;
+
+				string ini_label_else = $9.start_block_lb;
+  				string end_label_else = $9.end_block_lb;
 				
               	$$.end_block_lb = end_label_else;
-				
-				pilhaMapas.pop_back();
 
-				string ini_label_if = pilhaMapas[pilhaMapas.size() - 1].start_block_lb;
-  				string end_label_if = pilhaMapas[pilhaMapas.size() - 1].end_block_lb;
+				string ini_label_if = $5.start_block_lb;
+  				string end_label_if = $5.end_block_lb;
 
                 $$.traducao = $3.traducao;
   				$$.traducao += $1.label + "(" + $3.label + ") goto " + ini_label_if + ";\n" + "goto " + ini_label_else + ";\n";
-                $$.traducao += "\n" + ini_label_if + ": \n" + $6.traducao + "goto " + end_label_else + "; \n\n" + ini_label_else + ": \n" + $9.traducao + "\n" + end_label_else + ": \n";
-
-				pilhaMapas.pop_back();
+                $$.traducao += "\n" + ini_label_if + ": \n" + $6.traducao + "goto " + end_label_else + "; \n\n" + ini_label_else + ": \n" + $10.traducao + "\n" + end_label_else + ": \n";
 			}
-			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO TK_COM_ELSE BL_CONDICIONAL		// IF ELSE IF
+			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE BL_CONDICIONAL		// IF ELSE IF
 			{
-              	$$.end_block_lb = $8.end_block_lb;
+              	$$.end_block_lb = $9.end_block_lb;
   				
-				string ini_label = pilhaMapas[pilhaMapas.size() - 1].start_block_lb;
-  				string end_label = pilhaMapas[pilhaMapas.size() - 1].end_block_lb;
-  				string end_label_elseif = $8.end_block_lb;
+				string ini_label = $5.start_block_lb;
+  				string end_label = $5.end_block_lb;
+  				string end_label_elseif = $$.end_block_lb;
   
                 $$.traducao =  $3.traducao;
   				$$.traducao += $1.label + "(" + $3.label + ") goto " + ini_label + ";\n" + "goto " + end_label + ";\n";
                 $$.traducao += "\n" + ini_label + ": \n" + $6.traducao + "goto " + end_label_elseif + "; \n\n" + end_label + ": \n";
   
-				$$.traducao += $8.traducao;
+				$$.traducao += $9.traducao;
+
 			}
 			;
 /*
@@ -414,6 +428,47 @@ BL_LOOP		: INIT_BLOCO TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
   				string end_label = pilhaMapas[pilhaMapas.size() - 1].end_block_lb;
   
   				// Temos que pensar em iterar a condição 
+
+  				/*
+					
+					int i = 0;
+					while(i < 10){
+						i++;
+					}
+
+
+
+					rot_1:
+
+					int tmp_0;
+					int tmp_1;
+					int tmp_3;
+					tmp_0 = var_0;
+					tmp_1 = 10;
+					tmp_3 = tmp_0 < tmp_1;
+
+					if(tmp_3) goto rot_2;
+					goto rot_3;
+					
+					rot_2:
+						//....
+					goto rot_1;
+
+					rot_3:
+					
+					
+					
+					
+					
+					
+					
+					
+					
+					
+					
+					
+  				*/
+
 			}
 			| INIT_BLOCO TK_COM_FOR '(' ATTR ';' CONDICAO ';' ATTR ')' BLOCO END_BLOCO
 			{
@@ -424,6 +479,7 @@ BL_LOOP		: INIT_BLOCO TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 				// DO... WHILE
 			}
 			;
+
 E 			: '(' E ')'
 			{
 				$$.traducao = $2.traducao;
@@ -666,6 +722,8 @@ OP_RELACIONAL 	: E TK_OP_REL E 	//OPERAÇÕES RELACIONAIS
 						}
 					}
 
+					printf("Operacao relacional entre tipos iguais\n");
+
 				} else{ //caso sejam de tipos diferentes
 					if($1.tipo_var == "int" && $3.tipo_var == "float"){
 						string aux_var1 = traducao_tipo($3);
@@ -684,6 +742,7 @@ OP_RELACIONAL 	: E TK_OP_REL E 	//OPERAÇÕES RELACIONAIS
                     } else{
                     	yyerror("ERRO: Não é possível realizar esta operação entres estes tipos de variáveis.");
                     }
+                    printf("Operacao relacional entre tipos diferentes\n");
                 }
 			}
 			;
