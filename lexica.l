@@ -13,7 +13,7 @@ REAL {NUM}+("."{NUM}+)?
 CHAR \'({LETRA}|{NUM})\'
 BOOL "true"|"false"|"1"|"0"
 ID {LETRA}({LETRA}|{NUM})*
-STRING \"({LETRA}|{NUM})+\"
+STRING \"([^\"\n]|\\\")*\"
 
 %%
 
