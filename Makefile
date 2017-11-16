@@ -3,8 +3,20 @@ all:
 		clear
 		lex lexica.l
 		yacc -d sintatica.y
-		g++ -o morsao y.tab.c -lfl
+		g++ -std=c++0x -o glf y.tab.c -lfl
 
-clean:
-	rm glf
-	rm *.o
+		./glf < teste.morsa
+		g++ intermed.cpp -o intermed
+		./intermed
+
+#all:
+#		clear
+#	#	yacc -d sintatica.y
+#		g++ -std=c++0x -o morsao y.tab.c -lfl
+#
+#clean:
+#	rm morsao
+#	rm *.o
+#	rm *tab.c
+#	rm *tab.h
+#	rm *yy.c
