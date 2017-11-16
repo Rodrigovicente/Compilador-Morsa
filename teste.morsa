@@ -1,0 +1,12 @@
+{
+	string a = "aaaa";
+
+	bool cond = a == "aaaa";
+
+	if(cond){
+		print: a;
+	} else{
+		print: "nao_foi";
+	}
+
+}
