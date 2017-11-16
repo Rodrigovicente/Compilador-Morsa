@@ -20,4 +20,3 @@ all:
 #	rm *tab.c
 #	rm *tab.h
 #	rm *yy.c
-#

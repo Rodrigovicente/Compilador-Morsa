@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 #define YYSTYPE atributos
 
 using namespace std;
@@ -182,8 +181,76 @@ bool mapaSetTam(string nome_var, string str_tamanho){
 
 }
 
+  	result = attr.label + ".0";
+
+  	return result;
+}
+
+  //testar as duas
+
+/*string float_to_int(atributos attr){
+  	int i;
+    std::string result;
+    for(i = 0; i < attr.label.size() - 1; i++){
+      if(attr.label[i] == "."){
+        result = attr.label.substr (0,i);
+        break;
+      }
+    }
+    return result;
+  }
+  */
 
 
+	string float_to_int(atributos attr){
+		if(attr.tipo_var == "float"){
+            int i;
+            string resultado = "";
+			for(i = 0; i< attr.label.size() - 1; i++){
+				if(attr.label[i] == '.'){
+					return resultado;
+				} else {
+					resultado += attr.label[i];
+				}
+			}
+        } else{
+			return NULL;
+        }
+
+  }
+
+  string charToInt(atributos attr)
+  {
+      string result;
+      if(attr.tipo_var == "char"){
+		 			char letra = attr.label[0];
+          result = to_string((int) letra);
+      } else{
+          result = "";
+      }
+      return result;
+  }
+  string charToFloat(atributos attr)
+  {
+      string result;
+      if(attr.tipo_var == "char"){
+          char letra = attr.label[0];
+          result = to_string((int) letra);
+          result += ".0";
+      } else{
+          result = "";
+      }
+      return result;
+  }
+
+string remove_aspas(string text){
+    if(text[0] == '\"' && text[text.size() - 1] == '\"'){
+        string result = text.substr(1, text.size() - 2);
+        return result;
+    } else{
+        return NULL;
+    }
+}
 
 void mapaPushVar(atributos variavel){
 	pilhaMapas[pilhaMapas.size() - 1].attrs.push_back(variavel);
@@ -270,7 +337,7 @@ S 			: INIT_BLOCO BLOCO END_BLOCO
 			{
   				string out = "/*Compilador MORSA*/ \n #include <iostream>\n#include <string.h>\n#include<string.h>\n#include<stdio.h>\nusing namespace std;\nint main(void)\n{\n" + $2.traducao + "\n \t return 0;\n}\n";
   				FILE* fout = fopen("intermed.cpp", "w");
-				fprintf(fout, "%s", out.c_str());
+				  fprintf(fout, "%s", out.c_str());
   				cout << out;
 			}
 			;
@@ -480,6 +547,19 @@ BL_LOOP		: INIT_BLOCO TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 			}
 			;
 
+BL_LOOP		: INIT_BLOCO TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
+			{
+				// WHILE
+			}
+			| INIT_BLOCO TK_COM_FOR '(' ATTR ';' CONDICAO ';' ATTR ')' BLOCO END_BLOCO
+			{
+				// FOR
+			}
+			| INIT_BLOCO TK_COM_DO BLOCO TK_COM_WHILE '(' CONDICAO ')' END_BLOCO
+			{
+				// DO... WHILE
+			}
+			;*/
 E 			: '(' E ')'
 			{
 				$$.traducao = $2.traducao;
@@ -647,8 +727,8 @@ E 			: '(' E ')'
                     }
 				}
 
-            }
-            | OP_RELACIONAL
+      }
+      | OP_RELACIONAL
 			| TK_ID
 			{
 				$$ = mapaGetVar($1);
