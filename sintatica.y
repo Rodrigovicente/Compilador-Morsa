@@ -33,6 +33,7 @@ struct mapaVar
 	bool isLoop;
 	string start_block_lb;
 	string end_block_lb;
+	bool isQuebravel;
 };
 
 typedef struct mapaVar mapaVariaveis;
@@ -126,7 +127,7 @@ void declaracaoAddVar(string tipo_var, string nome_var){
 }
 
 string declaraVariaveis(){
-	string result = "";
+	string result = "// declaracao de todas as variáveis\n";
 	int i;
 
 	for(i = 0; i < pilhaDeclaracao.size(); i++){
@@ -137,12 +138,11 @@ string declaraVariaveis(){
 }
 
 string freeVariaveis(){
-	string result = "";
-	string trad_string = traducao_tipo(string);
+	string result = "// free de todas as variáveis\n";
 	int i;
 
 	for(i = 0; i < pilhaDeclaracao.size(); i++){
-		if(pilhaDeclaracao[i].tipo_var == trad_string){
+		if(pilhaDeclaracao[i].tipo_var == "char*"){
 			result += "free(" + pilhaDeclaracao[i].nome_var + "); \n";
 		}
 	}
@@ -157,7 +157,6 @@ bool mapasAddVar(atributos variavel){
 		pilhaMapas[pilhaMapas.size()-1].attrs.push_back(variavel);
 		printf("ADICIONEI NO MAPA: %d\n",pilhaMapas[pilhaMapas.size()-1].attrs.size() );
 
-		declaraoAddVar(variavel);
 		return true;
 	} else{
 		printf("NAO ADICIONEI NO MAPA\n" );
@@ -276,6 +275,10 @@ string cria_nome_rot(){
 %token TK_ATTR
 %token TK_PRINT
 %token TK_ENDL
+%token TK_BREAK
+%token TK_CONTINUE
+%token TK_CASE
+%token TK_DEFAULT
 
 %nonassoc TK_COM_IF
 
@@ -307,6 +310,7 @@ INIT_BLOCO	:
 				mapaVariaveis mapVar;
 				mapVar.start_block_lb = cria_nome_rot();
 				mapVar.end_block_lb = cria_nome_rot();
+				mapVar.isQuebravel = false;
 				pilhaMapas.push_back(mapVar);
 
 				$$.start_block_lb = mapVar.start_block_lb;
@@ -315,6 +319,22 @@ INIT_BLOCO	:
 				printf("+++CRIEI UM MAPA com rotulo: %s\n", pilhaMapas[pilhaMapas.size()-1].start_block_lb.c_str() );
 			}
 			;
+
+INIT_BLOCO_BREAK :
+			{
+				mapaVariaveis mapVar;
+				mapVar.start_block_lb = cria_nome_rot();
+				mapVar.end_block_lb = cria_nome_rot();
+				mapVar.isQuebravel = true;
+				pilhaMapas.push_back(mapVar);
+
+				$$.start_block_lb = mapVar.start_block_lb;
+				$$.end_block_lb = mapVar.end_block_lb;
+
+				printf("+++CRIEI UM MAPA QUEBRAVEL com rotulo: %s\n", pilhaMapas[pilhaMapas.size()-1].start_block_lb.c_str() );
+			}
+			;
+
 END_BLOCO	:
 			{
 				printf("---TIREI UM MAPA com rotulo: %s\n", pilhaMapas[pilhaMapas.size()-1].start_block_lb.c_str() );
@@ -426,6 +446,11 @@ CASE 		: TK_CASE E ':' COMANDOS CASE
 			}
 			| TK_CASE E ':' COMANDOS
 			{
+				$$.start_block_lb = cria_nome_rot();
+				string aux_var = pilhaSwitch[pilhaSwitch.size()-1].label;
+
+				$$.traducao = "if(" + $2.label + " == " + ": \n" + $4.traducao;
+				$$.traducao += "\n" + $$.start_block_lb + ": \n" + $4.traducao;
 
 			}
 			| TK_DEFAULT ':' COMANDOS
