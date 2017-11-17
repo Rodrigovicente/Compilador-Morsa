@@ -24,7 +24,6 @@ STRING \"([^\"\n]|\\\")*\"
 
 "int"|"float"|"char"|"bool"|"string"	{ yylval.label = yytext; yylval.tipo_var = yytext; return TK_TIPO; }
 
-
 "var"	{ yylval.label = yytext; return TK_TIPO_INFERIDO; }
 
 "(int)"|"(float)"|"(char)"		{ yylval.label = yytext; return TK_CAST; }
