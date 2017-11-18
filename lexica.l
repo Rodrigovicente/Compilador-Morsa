@@ -24,7 +24,6 @@ STRING \"([^\"\n]|\\\")*\"
 
 "int"|"float"|"char"|"bool"|"string"	{ yylval.label = yytext; yylval.tipo_var = yytext; return TK_TIPO; }
 
-
 "var"	{ yylval.label = yytext; return TK_TIPO_INFERIDO; }
 
 "(int)"|"(float)"|"(char)"		{ yylval.label = yytext; return TK_CAST; }
@@ -39,10 +38,23 @@ STRING \"([^\"\n]|\\\")*\"
 
 "else"	{ yylval.label = yytext; return TK_COM_ELSE; }
 
+"switch"	{ yylval.label = yytext; return TK_COM_SWITCH; }
 
-"&&"|"||"|"!"	{yylval.label = yytext; return TK_OP_LOG;}
+"while"	{ yylval.label = yytext; return TK_COM_WHILE; }
+
+"case"	{ yylval.label = yytext; return TK_CASE; }
+
+"default"	{ yylval.label = yytext; return TK_DEFAULT; }
+
+"break"	{ yylval.label = yytext; return TK_COM_BREAK; }
+
+
+"&&"|"||"|"!"	{ yylval.label = yytext; return TK_OP_LOG; }
 
 "print:"	{ yylval.label = yytext; return TK_PRINT; }
+
+"println:"	{ yylval.label = yytext; return TK_PRINTLN; }
+
 
 
 "="|"*="|"/="|"+="|"-="|"=="|"++"|"--"	{yylval.label = yytext; return TK_ATTR; }
