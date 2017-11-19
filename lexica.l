@@ -17,7 +17,9 @@ STRING \"([^\"\n]|\\\")*\"
 
 %%
 
-"\n"		{}
+\n		{ yylval.label = yytext; return TK_BRKLN; }
+
+";"		{ yylval.label = yytext; return TK_SEMICOL; }
 
 {DELIM} 	{}
 
@@ -47,6 +49,8 @@ STRING \"([^\"\n]|\\\")*\"
 "default"	{ yylval.label = yytext; return TK_DEFAULT; }
 
 "break"	{ yylval.label = yytext; return TK_COM_BREAK; }
+
+"for"	{ yylval.label = yytext; return TK_COM_FOR; }
 
 
 "&&"|"||"|"!"	{ yylval.label = yytext; return TK_OP_LOG; }

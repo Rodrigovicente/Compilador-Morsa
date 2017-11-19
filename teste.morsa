@@ -1,12 +1,11 @@
 {
-	string a = "aaaa";
+	int a;
 
-	bool cond = a == "aaaa";
-
-	if(cond){
-		print: a;
-	} else{
-		print: "nao_foi";
+	for( a = 0; a < 15; a++ ){
+		println: a;
 	}
+
+	print: "final foi - "
+	println: a 
 
 }

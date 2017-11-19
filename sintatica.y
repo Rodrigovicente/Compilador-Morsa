@@ -293,6 +293,8 @@ string cria_nome_rot(){
 %token TK_ENDL
 %token TK_CONTINUE
 %token TK_DEFAULT
+%token TK_BRKLN
+%token TK_SEMICOL
 
 %nonassoc TK_COM_IF
 
@@ -355,9 +357,9 @@ END_BLOCO	:
 				pilhaMapas.pop_back();
 			}
 
-BLOCO		: '{' COMANDOS '}'
+BLOCO		: '{' BRKLN COMANDOS BRKLN '}'
 			{
-				$$.traducao = $2.traducao;
+				$$.traducao = $3.traducao;
 				printf("CRIEI UM BLOCO COM NIVEL: %d\n", pilhaMapas.size());
 			}
 			;
@@ -374,19 +376,45 @@ COMANDOS	: COMANDO COMANDOS
 			|
 			;
 
-COMANDO 	: E ';'
-			| DECLARACAO ';'
-			| ATTR ';'
-			| PRINT ';'
-			| PRINTLN ';'
-			| BREAK ';'
-			| BL_CONDICIONAL
-			| BL_SWITCH
-			| BL_LOOP
+COMANDO 	: E END_COMANDO
+			| DECLARACAO END_COMANDO
+			| ATTR END_COMANDO
+			| PRINT END_COMANDO
+			| PRINTLN END_COMANDO
+			| BREAK END_COMANDO
+			| BL_CONDICIONAL BRKLN
+			| BL_SWITCH BRKLN
+			| BL_LOOP BRKLN
+			;
+
+END_COMANDO	: TK_BRKLN BRKLN
+			{
+				$$ = $1;
+				printf("break com \\n\n");
+			}
+			| TK_SEMICOL BRKLN
+			{
+				$$ = $1;
+				printf("break com ;\n");
+			}
+			;
+
+BRKLN 		: TK_BRKLN BRKLN
+			{
+				$$ = $1;
+				printf("break lineeeee\n");
+			}
+			| TK_BRKLN
+			{
+				$$ = $1;
+				printf("break line\n");
+			}
+			|
 			;
 
 CONDICAO 	: E
 			{
+				printf("CONFERINDO CONDICAO\n");
 				if($1.tipo_var == "bool"){
 					$$ = $1;
 				} else {
@@ -439,13 +467,13 @@ BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO	// IF
 			}
 			;
 
-BL_SWITCH 	: TK_COM_SWITCH INIT_BLOCO_BREAK '(' SWITCH_E ')' '{' CASE '}' END_BLOCO
+BL_SWITCH 	: TK_COM_SWITCH INIT_BLOCO_BREAK '(' SWITCH_E ')' '{' BRKLN CASE BRKLN '}' END_BLOCO BRKLN
 			{
 				string aux_var1 = $2.start_block_lb;
 				string aux_var2 = $2.end_block_lb;
 
 				//$$.traducao = $4.traducao;
-				$$.traducao = "\n" + aux_var1 + ": \n" + $7.traducao + "\n\n" + aux_var2 + ": \n";
+				$$.traducao = "\n" + aux_var1 + ": \n" + $8.traducao + "\n\n" + aux_var2 + ": \n";
 				pilhaSwitch.pop_back();
 			}
 			;
@@ -505,7 +533,6 @@ CASE 		: TK_CASE E COMANDOS CASE
 
 BREAK 		: TK_COM_BREAK
 			{
-				printf("CHEGOU AQUI 5\n");
 				string aux_var = breakMapas();
 				$$.traducao = "goto " + aux_var + "; \n";
 			}
@@ -513,15 +540,14 @@ BREAK 		: TK_COM_BREAK
 
 BL_LOOP		: INIT_BLOCO_BREAK TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 			{
-				string ini_label = pilhaMapas[pilhaMapas.size() - 1].start_block_lb;
-				string end_label = pilhaMapas[pilhaMapas.size() - 1].end_block_lb;
+				string ini_label = $1.start_block_lb;
+				string end_label = $1.end_block_lb;
 
-				string aux_var1 = $4.label;
-				string aux_var2 = cria_nome_rot();
+				string aux_var = cria_nome_rot();
 
 				$$.traducao += "\n" + ini_label + ": \n";
-				$$.traducao += $4.traducao + "if( " + $4.label + " ) goto " + aux_var2 + "; \ngoto " + end_label + "; \n";
-				$$.traducao += "\n" + aux_var2 + ": \n" + $6.traducao + "goto " + ini_label + "; \n\n" + end_label + ": \n";
+				$$.traducao += $4.traducao + "if( " + $4.label + " ) goto " + aux_var + "; \ngoto " + end_label + "; \n";
+				$$.traducao += "\n" + aux_var + ": \n" + $6.traducao + "goto " + ini_label + "; \n\n" + end_label + ": \n";
 
 
 				/*
@@ -557,9 +583,50 @@ BL_LOOP		: INIT_BLOCO_BREAK TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 				*/
 
 			}
-			| INIT_BLOCO TK_COM_FOR '(' ATTR ';' CONDICAO ';' ATTR ')' BLOCO END_BLOCO
+			| INIT_BLOCO_BREAK TK_COM_FOR '(' ATTR TK_SEMICOL CONDICAO TK_SEMICOL ATTR ')' BLOCO END_BLOCO
 			{
 				// FOR
+
+				string ini_label = $1.start_block_lb;
+				string end_label = $1.end_block_lb;
+
+				string aux_var = cria_nome_rot();
+
+				$$.traducao = $4.traducao + "\n" + ini_label + ": \n" + $6.traducao;
+				$$.traducao += "if( " + $6.label + " ) goto " + aux_var + "; \ngoto " + end_label + "; \n";
+				$$.traducao += "\n" + aux_var + ": \n" + $10.traducao + $8.traducao + "goto " + ini_label + "; \n\n" + end_label + ": \n";
+
+
+				/*
+					for(int i = 0; i < 10; i++){
+						// ...
+					}
+
+
+					int var_0;
+					int tmp_0;
+					int tmp_1;
+
+					rot_0:
+					var_0 = 0;
+					tmp_0 = 10;
+					tmp_1 = var_0 < tmp_0;
+
+					if(tmp_1) goto rot_1;
+					goto rot_2;
+
+					rot_1:
+					//...
+					
+					var_0 = var_0 + 1;
+					goto rot_0;
+
+					rot_2:
+
+
+
+
+				*/
 			}
 			| INIT_BLOCO TK_COM_DO BLOCO TK_COM_WHILE '(' CONDICAO ')' END_BLOCO
 			{
@@ -839,6 +906,7 @@ PRIMITIVA	: TK_NUM
 OP_RELACIONAL 	: E TK_OP_REL E 	//OPERAÇÕES RELACIONAIS
 			{
 				// > >= < <= == !=
+				printf("FAZENDO OPERAÇÃO RELACIONAL\n");
 				$$.tipo_var = "bool";
 				$$.label = cria_nome_tmp();
 				$$.traducao = $1.traducao + $3.traducao;
@@ -940,7 +1008,7 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 
 								}
 							}
-							mapaSetTam($1.label, "");
+							mapaSetTam($1.label, "-1");
 						}
 
 					} else{
