@@ -96,10 +96,10 @@ bool isConvertivel(atributos attr1, atributos attr2){
 }
 
 bool mapasContemVar(atributos variavel){
-	
+
 	bool result = false;
 	int i, j;
-	
+
 	if(!pilhaMapas.empty()){
 		for(i = pilhaMapas.size() - 1; i >= 0; i--){
 			if(!pilhaMapas[i].attrs.empty()){
@@ -119,7 +119,7 @@ void declaracaoAddVar(string tipo_var, string nome_var){
 	declaracaoVar variavel;
 	variavel.tipo_var = tipo_var;
 	variavel.nome_var = nome_var;
-	
+
 	pilhaDeclaracao.push_back(variavel);
 
 	printf("ADICIONEI PARA DECLARAR: %s - total: %d\n", pilhaDeclaracao[pilhaDeclaracao.size()-1].nome_var.c_str(), pilhaDeclaracao.size());
@@ -252,8 +252,8 @@ string cria_nome_rot(){
 	count_rots++;
 	string nome = "rot_"+convert.str();
 	return nome;
-}  
-  
+}
+
 
 %}
 
@@ -427,20 +427,20 @@ BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO	// IF
 			{
 				string ini_label = $5.start_block_lb;
 				string end_label = $5.end_block_lb;
-				
+
 				$$.end_block_lb = end_label;
 
 				$$.traducao =  $3.traducao;
 				$$.traducao += $1.label + "(" + $3.label + ") goto " + ini_label + ";\n" + "goto " + end_label + ";\n";
 				$$.traducao += "\n" + ini_label + ": \n" + $6.traducao + "\n" + end_label + ": \n";
-				
+
 			}
 			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE INIT_BLOCO BLOCO END_BLOCO 	//IF ELSE
 			{
 
 				string ini_label_else = $9.start_block_lb;
 				string end_label_else = $9.end_block_lb;
-				
+
 				$$.end_block_lb = end_label_else;
 
 				string ini_label_if = $5.start_block_lb;
@@ -453,15 +453,15 @@ BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO	// IF
 			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE BL_CONDICIONAL		// IF ELSE IF
 			{
 				$$.end_block_lb = $9.end_block_lb;
-				
+
 				string ini_label = $5.start_block_lb;
 				string end_label = $5.end_block_lb;
 				string end_label_elseif = $$.end_block_lb;
-  
+
 				$$.traducao =  $3.traducao;
 				$$.traducao += $1.label + "(" + $3.label + ") goto " + ini_label + ";\n" + "goto " + end_label + ";\n";
 				$$.traducao += "\n" + ini_label + ": \n" + $6.traducao + "goto " + end_label_elseif + "; \n\n" + end_label + ": \n";
-  
+
 				$$.traducao += $9.traducao;
 
 			}
@@ -501,7 +501,7 @@ CASE 		: TK_CASE E COMANDOS CASE
 					$$.traducao += "goto " + $$.end_block_lb + "; \n";
 				}
 				$$.traducao += "\n" + $$.start_block_lb + ": \n" + $3.traducao + "goto " + $4.start_block_lb + ";\n\n" + $$.end_block_lb + ": \n" + $4.traducao;
-			
+
 			}
 			| TK_CASE E COMANDOS
 			{
@@ -561,25 +561,25 @@ BL_LOOP		: INIT_BLOCO_BREAK TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 					int var_0;
 					int tmp_1;
 					int tmp_3;
-					
+
 
 					tmp_0 = 0;
 					var_0 = tmp_0;
 
-					
+
 					rot_1:
 					tmp_1 = 10;
 					tmp_2 = var_0;
 					tmp_3 = tmp_1 < tmp_2;
-					
+
 					if(tmp_3) goto rot_2;
 					goto rot_3;
-					
+
 					rot_2:
 						//....
 					goto rot_1;
-					
-					rot_3:	
+
+					rot_3:
 				*/
 
 			}
@@ -617,7 +617,7 @@ BL_LOOP		: INIT_BLOCO_BREAK TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 
 					rot_1:
 					//...
-					
+
 					var_0 = var_0 + 1;
 					goto rot_0;
 
@@ -631,6 +631,10 @@ BL_LOOP		: INIT_BLOCO_BREAK TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 			| INIT_BLOCO TK_COM_DO BLOCO TK_COM_WHILE '(' CONDICAO ')' END_BLOCO
 			{
 				// DO... WHILE
+				string ini_label = $1.start_block_lb;
+				string end_label = $1.end_block_lb;
+				$$.traducao = "\t " + ini_label + ":\n" + $3.traducao + $6.traducao;
+				$$.traducao += "if( " + $6.label + " ) " + "goto " + ini_label + ";\n" + "goto " + end_label;
 			}
 			;
 
@@ -759,7 +763,7 @@ E 			: '(' E ')'
 						if($1.tipo_var == "char" && $3.tipo_var == "char"){
 							yyerror("ERRO: Não é possivel concatenar expressões tipo char.");
 							// CONTINUAR ?
-						
+
 						} else if($1.tipo_var == "char" && $3.tipo_var == "string"){
 							yyerror("ERRO: Não é possivel concatenar expressões tipo string com expressões tipo char.");
 							// CONTINUAR ?
@@ -770,7 +774,7 @@ E 			: '(' E ')'
 
 						}else if($1.tipo_var == "string" && $3.tipo_var == "string"){
 							$$.str_tamanho = to_string(stoi($1.str_tamanho) + stoi($3.str_tamanho));
-							
+
 							string aux_var1 = cria_nome_tmp();
 							string aux_var2 = cria_nome_tmp();
 							string aux_var3 = cria_nome_tmp();
@@ -797,7 +801,7 @@ E 			: '(' E ')'
 							yyerror("ERRO: Não é possivel realizar operações aritméticas entre estes tipos de expressões.");
 
 						}
-						
+
 					} else{
 						yyerror("ERRO: Não é possivel realizar operações aritméticas entre estes tipos de expressões.");
 					}
@@ -958,7 +962,7 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 
 				if($$.label == "!morsa"){
 					yyerror("ERRO: Não existe uma variável com este nome.");
-				} else if($3.str_tamanho == "!morsa"){ 
+				} else if($3.str_tamanho == "!morsa"){
 					yyerror("ERRO: Deve ser atribuido um valor à variável para utiliza-la na atribuição de valor de outra variável.");
 				} else{
 					if($2.label == "="){
@@ -1014,7 +1018,7 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 					} else{
 						if($$.str_tamanho != "!morsa"){
 							if(($$.tipo_var == "int" || $$.tipo_var == "float") && ($3.tipo_var == "int" || $3.tipo_var == "float")){
-								
+
 								$$.traducao = $3.traducao;
 
 								if($$.tipo_var == $3.tipo_var){
@@ -1101,7 +1105,7 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 								declaracaoAddVar("int", aux_var);
 								$$.traducao += aux_var + " = " + $3.str_tamanho + " * sizeof(char); \n";
 								$$.traducao += $$.label + " = (char*) malloc( " + aux_var + " ); \n";
-							
+
 							} else{
 								string aux_var1 = cria_nome_tmp();
 								string aux_var2 = cria_nome_tmp();
@@ -1230,9 +1234,9 @@ DECLARACAO	: TK_TIPO TK_ID
 						if($4.tipo_var == "string"){
 							$$.str_tamanho = $4.str_tamanho;
 						} else{
-							$$.str_tamanho = "";							
+							$$.str_tamanho = "";
 						}
-						
+
 						mapasAddVar($$);
 					} else{
 						yyerror("ERRO: Já existe uma variável com este nome.");
