@@ -10,7 +10,7 @@ LETRA [A-Za-z_]
 DELIM {ESPACO}+
 NUM {DIGITO}+
 REAL {NUM}+("."{NUM}+)?
-CHAR \'({LETRA}|{NUM})\'
+CHAR \'([^\"\n]|\\\")\'
 BOOL "true"|"false"|"1"|"0"
 ID {LETRA}({LETRA}|{NUM})*
 STRING \"([^\"\n]|\\\")*\"
@@ -42,24 +42,37 @@ STRING \"([^\"\n]|\\\")*\"
 
 "switch"	{ yylval.label = yytext; return TK_COM_SWITCH; }
 
+"do"	{ yylval.label = yytext; return TK_COM_DO; }
+
 "while"	{ yylval.label = yytext; return TK_COM_WHILE; }
 
 "case"	{ yylval.label = yytext; return TK_CASE; }
 
 "default"	{ yylval.label = yytext; return TK_DEFAULT; }
 
+"for"	{ yylval.label = yytext; return TK_COM_FOR; }
+
 "break"	{ yylval.label = yytext; return TK_COM_BREAK; }
 
-"for"	{ yylval.label = yytext; return TK_COM_FOR; }
+"continue"	{ yylval.label = yytext; return TK_COM_CONTINUE; }
+
+"print"	{ yylval.label = yytext; return TK_PRINT; }
+
+"println"	{ yylval.label = yytext; return TK_PRINTLN; }
+
+"scan"	{ yylval.label = yytext; return TK_SCAN; }
+
+":"		{ yylval.label = yytext; return TK_COLON; }
+
+
+"/*"	{ yylval.label = yytext; return TK_START_COMMENT; }
+
+"*/"	{ yylval.label = yytext; return TK_START_COMMENT; }
+
+"//"	{ yylval.label = yytext; return TK_LN_COMMENT; }
 
 
 "&&"|"||"|"!"	{ yylval.label = yytext; return TK_OP_LOG; }
-
-"print:"	{ yylval.label = yytext; return TK_PRINT; }
-
-"println:"	{ yylval.label = yytext; return TK_PRINTLN; }
-
-
 
 "="|"*="|"/="|"+="|"-="|"=="|"++"|"--"	{yylval.label = yytext; return TK_ATTR; }
 

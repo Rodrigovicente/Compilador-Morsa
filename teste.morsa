@@ -1,11 +1,9 @@
 {
-	int a;
+	int b;
 
-	for( a = 0; a < 15; a++ ){
-		println: a;
-	}
 
-	print: "final foi - "
-	println: a 
+	b:scan
+
+	println: b
 
 }

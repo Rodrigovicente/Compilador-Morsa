@@ -42,6 +42,7 @@ struct declaracao_Var
 {
 	string tipo_var;
 	string nome_var;
+	bool isFreeable;
 };
 typedef struct declaracao_Var declaracaoVar;
 
@@ -52,6 +53,8 @@ static int count_rots = 0;
 vector<mapaVariaveis> pilhaMapas;
 vector<declaracaoVar> pilhaDeclaracao;
 vector<atributos> pilhaSwitch;
+
+bool isComentario = false;
 
 
 // relação tipo em morsa - tipo em c
@@ -96,10 +99,10 @@ bool isConvertivel(atributos attr1, atributos attr2){
 }
 
 bool mapasContemVar(atributos variavel){
-
+	
 	bool result = false;
 	int i, j;
-
+	
 	if(!pilhaMapas.empty()){
 		for(i = pilhaMapas.size() - 1; i >= 0; i--){
 			if(!pilhaMapas[i].attrs.empty()){
@@ -116,14 +119,30 @@ bool mapasContemVar(atributos variavel){
 }
 
 void declaracaoAddVar(string tipo_var, string nome_var){
-	declaracaoVar variavel;
-	variavel.tipo_var = tipo_var;
-	variavel.nome_var = nome_var;
+	if(!isComentario){
+		declaracaoVar variavel;
+		variavel.tipo_var = tipo_var;
+		variavel.nome_var = nome_var;
+		variavel.isFreeable = true;
+		
+		pilhaDeclaracao.push_back(variavel);
 
-	pilhaDeclaracao.push_back(variavel);
+		printf("ADICIONEI PARA DECLARAR: %s - total: %d\n", pilhaDeclaracao[pilhaDeclaracao.size()-1].nome_var.c_str(), pilhaDeclaracao.size());
+	}
+}
 
-	printf("ADICIONEI PARA DECLARAR: %s - total: %d\n", pilhaDeclaracao[pilhaDeclaracao.size()-1].nome_var.c_str(), pilhaDeclaracao.size());
+void declaracaoAddVar(string tipo_var, string nome_var, bool isFreeable){
+	if(!isComentario){
+		declaracaoVar variavel;
+		variavel.tipo_var = tipo_var;
+		variavel.nome_var = nome_var;
+		variavel.isFreeable = isFreeable;
+		
+		pilhaDeclaracao.push_back(variavel);
 
+		printf("ADICIONEI PARA DECLARAR: %s - total: %d\n", pilhaDeclaracao[pilhaDeclaracao.size()-1].nome_var.c_str(), pilhaDeclaracao.size());
+
+	}
 }
 
 string declaraVariaveis(){
@@ -142,7 +161,7 @@ string freeVariaveis(){
 	int i;
 
 	for(i = 0; i < pilhaDeclaracao.size(); i++){
-		if(pilhaDeclaracao[i].tipo_var == "char*"){
+		if(pilhaDeclaracao[i].tipo_var == "char*" && pilhaDeclaracao[i].isFreeable == true){
 			result += "free(" + pilhaDeclaracao[i].nome_var + "); \n";
 		}
 	}
@@ -151,17 +170,20 @@ string freeVariaveis(){
 }
 
 bool mapasAddVar(atributos variavel){
-	bool aux;
-	aux = mapasContemVar(variavel);
-	if(!aux){
-		pilhaMapas[pilhaMapas.size()-1].attrs.push_back(variavel);
-		printf("ADICIONEI NO MAPA: %d\n",pilhaMapas[pilhaMapas.size()-1].attrs.size() );
+	if(!isComentario){
+		bool aux;
+		aux = mapasContemVar(variavel);
+		if(!aux){
+			pilhaMapas[pilhaMapas.size()-1].attrs.push_back(variavel);
+			printf("ADICIONEI NO MAPA: %d\n",pilhaMapas[pilhaMapas.size()-1].attrs.size() );
 
-		return true;
-	} else{
-		printf("NAO ADICIONEI NO MAPA\n" );
-		return false;
+			return true;
+		} else{
+			printf("NAO ADICIONEI NO MAPA\n" );
+			return false;
+		}
 	}
+	return false;
 }
 
 atributos mapaGetVar(atributos variavel){
@@ -191,27 +213,30 @@ atributos mapaGetVar(atributos variavel){
 
 bool mapaSetTam(string nome_var, string str_tamanho){
 
-	bool saida;
+	if(!isComentario){
+		bool saida;
 
-	int i, j;
-	printf(" *********** mudando tamanho string\n" );
+		int i, j;
+		printf(" *********** mudando tamanho string\n" );
 
-	for(i = pilhaMapas.size() - 1; i >= 0; i--){
-		if(!pilhaMapas[i].attrs.empty()){
-			for(j = 0; j < pilhaMapas[i].attrs.size(); j++){
-				if(pilhaMapas[i].attrs[j].nome_var == nome_var){
-					pilhaMapas[i].attrs[j].str_tamanho = str_tamanho;
-					printf(" --- tamanho novo: %s\n", pilhaMapas[i].attrs[j].str_tamanho.c_str() );
-					saida = true;
-					return saida;
+		for(i = pilhaMapas.size() - 1; i >= 0; i--){
+			if(!pilhaMapas[i].attrs.empty()){
+				for(j = 0; j < pilhaMapas[i].attrs.size(); j++){
+					if(pilhaMapas[i].attrs[j].nome_var == nome_var){
+						pilhaMapas[i].attrs[j].str_tamanho = str_tamanho;
+						printf(" --- tamanho novo: %s\n", pilhaMapas[i].attrs[j].str_tamanho.c_str() );
+						saida = true;
+						return saida;
+					}
 				}
 			}
 		}
-	}
 
-	printf(" .... nao mudou .....: %s\n", str_tamanho.c_str() );
-	saida = false;
-	return saida;
+		printf(" .... nao mudou .....: %s\n", str_tamanho.c_str() );
+		saida = false;
+		return saida;
+	}
+	return false;
 }
 
 string breakMapas(){
@@ -223,6 +248,22 @@ string breakMapas(){
 	for(i = (mapaTam-1); i >= 0; i--){
 		if(pilhaMapas[i].isQuebravel){
 			result = pilhaMapas[i].end_block_lb;
+			break;
+		}
+	}
+
+	return result;
+}
+
+string continueMapas(){
+	printf("DANDO CONTINUE\n");
+	string result = "!morsa";
+	int i, j;
+	int mapaTam = pilhaMapas.size();
+
+	for(i = (mapaTam-1); i >= 0; i--){
+		if(pilhaMapas[i].isQuebravel){
+			result = pilhaMapas[i].start_block_lb;
 			break;
 		}
 	}
@@ -252,8 +293,8 @@ string cria_nome_rot(){
 	count_rots++;
 	string nome = "rot_"+convert.str();
 	return nome;
-}
-
+}  
+  
 
 %}
 
@@ -286,15 +327,21 @@ string cria_nome_rot(){
 %token TK_COM_DO
 %token TK_COM_SWITCH
 %token TK_COM_BREAK
+%token TK_COM_CONTINUE
 %token TK_CASE
 %token TK_ATTR
 %token TK_PRINT
 %token TK_PRINTLN
+%token TK_SCAN
 %token TK_ENDL
 %token TK_CONTINUE
 %token TK_DEFAULT
 %token TK_BRKLN
 %token TK_SEMICOL
+%token TK_COLON
+%token TK_START_COMMENT
+%token TK_END_COMMENT
+%token TK_LN_COMMENT
 
 %nonassoc TK_COM_IF
 
@@ -381,10 +428,14 @@ COMANDO 	: E END_COMANDO
 			| ATTR END_COMANDO
 			| PRINT END_COMANDO
 			| PRINTLN END_COMANDO
+			| SCAN END_COMANDO
 			| BREAK END_COMANDO
+			| CONTINUE END_COMANDO
 			| BL_CONDICIONAL BRKLN
 			| BL_SWITCH BRKLN
 			| BL_LOOP BRKLN
+			| COMENT
+			| COMENT_LN
 			;
 
 END_COMANDO	: TK_BRKLN BRKLN
@@ -412,6 +463,31 @@ BRKLN 		: TK_BRKLN BRKLN
 			|
 			;
 
+COMENT		: TK_START_COMMENT START_COMENT BRKLN COMANDOS BRKLN END_COMENT TK_END_COMMENT
+			{
+				printf("COMENTARIO DE N LINHAS\n");
+				$$.traducao = "/* comentario */ \n";
+
+			}
+
+COMENT_LN 	: TK_LN_COMMENT START_COMENT COMANDO END_COMENT
+			{
+				printf("COMENTARIO DE UMA LINHA\n");
+				$$.traducao = "// comentario \n";
+
+			}
+
+START_COMENT:
+			{
+				isComentario = true;
+			}
+			;
+
+END_COMENT 	:
+			{
+				isComentario = false;
+			}
+
 CONDICAO 	: E
 			{
 				printf("CONFERINDO CONDICAO\n");
@@ -427,20 +503,20 @@ BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO	// IF
 			{
 				string ini_label = $5.start_block_lb;
 				string end_label = $5.end_block_lb;
-
+				
 				$$.end_block_lb = end_label;
 
 				$$.traducao =  $3.traducao;
 				$$.traducao += $1.label + "(" + $3.label + ") goto " + ini_label + ";\n" + "goto " + end_label + ";\n";
 				$$.traducao += "\n" + ini_label + ": \n" + $6.traducao + "\n" + end_label + ": \n";
-
+				
 			}
 			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE INIT_BLOCO BLOCO END_BLOCO 	//IF ELSE
 			{
 
 				string ini_label_else = $9.start_block_lb;
 				string end_label_else = $9.end_block_lb;
-
+				
 				$$.end_block_lb = end_label_else;
 
 				string ini_label_if = $5.start_block_lb;
@@ -453,15 +529,15 @@ BL_CONDICIONAL : TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO	// IF
 			| TK_COM_IF '(' CONDICAO ')' INIT_BLOCO BLOCO END_BLOCO TK_COM_ELSE BL_CONDICIONAL		// IF ELSE IF
 			{
 				$$.end_block_lb = $9.end_block_lb;
-
+				
 				string ini_label = $5.start_block_lb;
 				string end_label = $5.end_block_lb;
 				string end_label_elseif = $$.end_block_lb;
-
+  
 				$$.traducao =  $3.traducao;
 				$$.traducao += $1.label + "(" + $3.label + ") goto " + ini_label + ";\n" + "goto " + end_label + ";\n";
 				$$.traducao += "\n" + ini_label + ": \n" + $6.traducao + "goto " + end_label_elseif + "; \n\n" + end_label + ": \n";
-
+  
 				$$.traducao += $9.traducao;
 
 			}
@@ -501,7 +577,7 @@ CASE 		: TK_CASE E COMANDOS CASE
 					$$.traducao += "goto " + $$.end_block_lb + "; \n";
 				}
 				$$.traducao += "\n" + $$.start_block_lb + ": \n" + $3.traducao + "goto " + $4.start_block_lb + ";\n\n" + $$.end_block_lb + ": \n" + $4.traducao;
-
+			
 			}
 			| TK_CASE E COMANDOS
 			{
@@ -538,6 +614,13 @@ BREAK 		: TK_COM_BREAK
 			}
 			;
 
+CONTINUE	: TK_COM_CONTINUE
+			{
+				string aux_var = continueMapas();
+				$$.traducao = "goto " + aux_var + "; \n";
+			}
+			;
+
 BL_LOOP		: INIT_BLOCO_BREAK TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 			{
 				string ini_label = $1.start_block_lb;
@@ -561,25 +644,25 @@ BL_LOOP		: INIT_BLOCO_BREAK TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 					int var_0;
 					int tmp_1;
 					int tmp_3;
-
+					
 
 					tmp_0 = 0;
 					var_0 = tmp_0;
 
-
+					
 					rot_1:
 					tmp_1 = 10;
 					tmp_2 = var_0;
 					tmp_3 = tmp_1 < tmp_2;
-
+					
 					if(tmp_3) goto rot_2;
 					goto rot_3;
-
+					
 					rot_2:
 						//....
 					goto rot_1;
-
-					rot_3:
+					
+					rot_3:	
 				*/
 
 			}
@@ -590,11 +673,12 @@ BL_LOOP		: INIT_BLOCO_BREAK TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 				string ini_label = $1.start_block_lb;
 				string end_label = $1.end_block_lb;
 
-				string aux_var = cria_nome_rot();
+				string aux_var1 = cria_nome_rot();
+				string aux_var2 = cria_nome_rot();
 
-				$$.traducao = $4.traducao + "\n" + ini_label + ": \n" + $6.traducao;
-				$$.traducao += "if( " + $6.label + " ) goto " + aux_var + "; \ngoto " + end_label + "; \n";
-				$$.traducao += "\n" + aux_var + ": \n" + $10.traducao + $8.traducao + "goto " + ini_label + "; \n\n" + end_label + ": \n";
+				$$.traducao = $4.traducao + "\n" + aux_var1 + ": \n" + $6.traducao;
+				$$.traducao += "if( " + $6.label + " ) goto " + aux_var2 + "; \ngoto " + end_label + "; \n";
+				$$.traducao += "\n" + aux_var2 + ": \n" + $10.traducao + "\n" + ini_label + ": \n" + $8.traducao + "goto " + aux_var1 + "; \n\n" + end_label + ": \n";
 
 
 				/*
@@ -617,7 +701,7 @@ BL_LOOP		: INIT_BLOCO_BREAK TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 
 					rot_1:
 					//...
-
+					
 					var_0 = var_0 + 1;
 					goto rot_0;
 
@@ -628,13 +712,14 @@ BL_LOOP		: INIT_BLOCO_BREAK TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 
 				*/
 			}
-			| INIT_BLOCO TK_COM_DO BLOCO TK_COM_WHILE '(' CONDICAO ')' END_BLOCO
+			| INIT_BLOCO_BREAK TK_COM_DO BLOCO TK_COM_WHILE '(' CONDICAO ')' END_BLOCO
 			{
 				// DO... WHILE
+
 				string ini_label = $1.start_block_lb;
 				string end_label = $1.end_block_lb;
-				$$.traducao = "\t " + ini_label + ":\n" + $3.traducao + $6.traducao;
-				$$.traducao += "if( " + $6.label + " ) " + "goto " + ini_label + ";\n" + "goto " + end_label;
+				$$.traducao = "\n" + ini_label + ":\n" + $3.traducao + $6.traducao;
+				$$.traducao += "if( " + $6.label + " ) " + "goto " + ini_label + "; \n\n";
 			}
 			;
 
@@ -763,7 +848,7 @@ E 			: '(' E ')'
 						if($1.tipo_var == "char" && $3.tipo_var == "char"){
 							yyerror("ERRO: Não é possivel concatenar expressões tipo char.");
 							// CONTINUAR ?
-
+						
 						} else if($1.tipo_var == "char" && $3.tipo_var == "string"){
 							yyerror("ERRO: Não é possivel concatenar expressões tipo string com expressões tipo char.");
 							// CONTINUAR ?
@@ -774,7 +859,7 @@ E 			: '(' E ')'
 
 						}else if($1.tipo_var == "string" && $3.tipo_var == "string"){
 							$$.str_tamanho = to_string(stoi($1.str_tamanho) + stoi($3.str_tamanho));
-
+							
 							string aux_var1 = cria_nome_tmp();
 							string aux_var2 = cria_nome_tmp();
 							string aux_var3 = cria_nome_tmp();
@@ -786,7 +871,7 @@ E 			: '(' E ')'
 							declaracaoAddVar("int", aux_var2);
 							declaracaoAddVar("int", aux_var3);
 							declaracaoAddVar(traducao_tipo($$), aux_var4);
-							declaracaoAddVar(traducao_tipo($$), aux_var5);
+							declaracaoAddVar(traducao_tipo($$), aux_var5, false);
 							declaracaoAddVar(traducao_tipo($$), $$.label);
 
 							$$.traducao += aux_var1 + " = " + $1.str_tamanho + " + " + $3.str_tamanho + "; \n";
@@ -801,7 +886,7 @@ E 			: '(' E ')'
 							yyerror("ERRO: Não é possivel realizar operações aritméticas entre estes tipos de expressões.");
 
 						}
-
+						
 					} else{
 						yyerror("ERRO: Não é possivel realizar operações aritméticas entre estes tipos de expressões.");
 					}
@@ -962,7 +1047,7 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 
 				if($$.label == "!morsa"){
 					yyerror("ERRO: Não existe uma variável com este nome.");
-				} else if($3.str_tamanho == "!morsa"){
+				} else if($3.str_tamanho == "!morsa"){ 
 					yyerror("ERRO: Deve ser atribuido um valor à variável para utiliza-la na atribuição de valor de outra variável.");
 				} else{
 					if($2.label == "="){
@@ -1018,7 +1103,7 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 					} else{
 						if($$.str_tamanho != "!morsa"){
 							if(($$.tipo_var == "int" || $$.tipo_var == "float") && ($3.tipo_var == "int" || $3.tipo_var == "float")){
-
+								
 								$$.traducao = $3.traducao;
 
 								if($$.tipo_var == $3.tipo_var){
@@ -1105,7 +1190,7 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 								declaracaoAddVar("int", aux_var);
 								$$.traducao += aux_var + " = " + $3.str_tamanho + " * sizeof(char); \n";
 								$$.traducao += $$.label + " = (char*) malloc( " + aux_var + " ); \n";
-
+							
 							} else{
 								string aux_var1 = cria_nome_tmp();
 								string aux_var2 = cria_nome_tmp();
@@ -1205,7 +1290,7 @@ DECLARACAO	: TK_TIPO TK_ID
 					$$.label = cria_nome_var();
 					$$.nome_var = $2.label;
 					$$.tipo_var = $1.label;
-					declaracaoAddVar(traducao_tipo($$), $$.label);
+					declaracaoAddVar(traducao_tipo($$), $$.label, false);
 					$$.traducao = "";
 
 					$$.str_tamanho = "!morsa";
@@ -1234,9 +1319,9 @@ DECLARACAO	: TK_TIPO TK_ID
 						if($4.tipo_var == "string"){
 							$$.str_tamanho = $4.str_tamanho;
 						} else{
-							$$.str_tamanho = "";
+							$$.str_tamanho = "";							
 						}
-
+						
 						mapasAddVar($$);
 					} else{
 						yyerror("ERRO: Já existe uma variável com este nome.");
@@ -1253,17 +1338,49 @@ DECLARACAO	: TK_TIPO TK_ID
 			}*/
 			;
 
-PRINT		: TK_PRINT E
+PRINT		: TK_PRINT TK_COLON PRINT_EXPS
 			{
-				$$.traducao = $2.traducao;
-				$$.traducao += "cout << " + $2.label + "; \n";
+				printf("IMPRIMINDO TIPOS DIFERENTES\n");
+				$$.traducao = $3.traducao;
+				$$.traducao += "cout" + $3.label + "; \n";
 			}
-		;
+			;
 
-PRINTLN		: TK_PRINTLN E
+PRINTLN		: TK_PRINTLN TK_COLON PRINT_EXPS
 			{
-				$$.traducao = $2.traducao;
-				$$.traducao += "cout << " + $2.label + " << endl; \n";
+				printf("IMPRIMINDO TIPOS DIFERENTES\n");
+				$$.traducao = $3.traducao;
+				$$.traducao += "cout" + $3.label + " << endl; \n";
+			}
+			;
+
+PRINT_EXPS	: E PRINT_EXPS
+			{
+				$$.traducao = $1.traducao + $2.traducao;
+				$$.label = " << " + $1.label + $2.label;
+			}
+			| E
+			{
+				$$.traducao = $1.traducao;
+				$$.label = " << " + $1.label;
+			}
+			;
+
+SCAN		: TK_ID TK_COLON TK_SCAN
+			{
+				atributos aux_var1;
+
+				aux_var1 = mapaGetVar($1);
+				int aux_var2 = 100 * sizeof(char);
+
+				if(aux_var1.label != "!morsa"){
+					$$.traducao = aux_var1.traducao;
+					if(aux_var1.tipo_var == "string" && aux_var1.str_tamanho == "!morsa"){
+						$$.traducao += aux_var1.label + " = (char*) malloc(" + to_string(aux_var2) + "); \n";
+					}
+					printf("SCAN ENTRADA DO USUARIO\n");
+					$$.traducao += "cin >> " + aux_var1.label + "; \n";
+				}
 			}
 			;
 
