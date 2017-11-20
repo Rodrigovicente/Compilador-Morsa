@@ -1,12 +1,9 @@
 {
-	string a = "aaaa";
+	int b;
 
-	bool cond = a == "aaaa";
 
-	if(cond){
-		print: a;
-	} else{
-		print: "nao_foi";
-	}
+	b:scan
+
+	println: b
 
 }
