@@ -5,7 +5,7 @@ all:
 		yacc -d sintatica.y
 		g++ -std=c++0x -o glf y.tab.c -lfl
 
-		./glf < teste.morsa
+		./glf < ${nome}.morsa
 		g++ intermed.cpp -o intermed
 		./intermed
 
