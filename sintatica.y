@@ -304,57 +304,26 @@ string cria_nome_rot(){
 %token TK_FIM TK_ERROR
 %token BL_CONDICIONAL BL_CONDICIONAL_SWITCH BL_CONDICIONAL_SWITCH
 %token TK_COM_IF TK_COM_ELSE TK_COM_SWITCH
-%token TK_COM_DEFAULT TK_COM_WHILE TK_COM_FOR TK_COM_DO TK_CAST TK_OP_ARI TK_OP_LOG TK_STRING TK_OP_REL TK_ATTR TK_TIPO TK_TIPO_INFERIDO*/
+%token TK_COM_WHILE TK_COM_FOR TK_COM_DO TK_CAST TK_OP_ARI TK_OP_LOG TK_STRING TK_OP_REL TK_ATTR TK_TIPO TK_TIPO_INFERIDO*/
 
-%token TK_COM_DEFAULT
-%token TK_OP_ARI
-%token TK_OP_REL
-%token TK_OP_LOG
-%token TK_CAST
-%token TK_BOOL
-%token TK_ID
-%token TK_NUM
-%token TK_CHAR
-%token TK_STRING
-%token TK_REAL
-%token TK_TIPO
-%token TK_TIPO_INFERIDO
-//%token TK_FIM TK_ERROR
-%token TK_COM_IF
-%token TK_COM_ELSE
-%token TK_COM_WHILE
-%token TK_COM_FOR
-%token TK_COM_DO
-%token TK_COM_SWITCH
-%token TK_COM_BREAK
-%token TK_COM_CONTINUE
-%token TK_CASE
-%token TK_ATTR
-%token TK_PRINT
-%token TK_PRINTLN
-%token TK_SCAN
-%token TK_ENDL
-%token TK_CONTINUE
-%token TK_DEFAULT
-%token TK_BRKLN
-%token TK_SEMICOL
-%token TK_COLON
-%token TK_START_COMMENT
-%token TK_END_COMMENT
-%token TK_LN_COMMENT
+%token TK_OP_ARI_AS TK_OP_ARI_MD TK_OP_REL TK_OP_LOG
+%token TK_CAST TK_ATTR TK_BOOL TK_ID TK_NUM TK_CHAR TK_STRING TK_REAL
+%token TK_TIPO TK_TIPO_INFERIDO
+%token TK_COM_IF TK_COM_ELSE TK_COM_WHILE TK_COM_FOR TK_COM_DO TK_COM_SWITCH TK_COM_BREAK TK_COM_CONTINUE TK_CASE TK_DEFAULT
+%token TK_PRINT TK_PRINTLN TK_SCAN
+%token TK_ENDL TK_BRKLN TK_SEMICOL TK_COLON
+%token TK_START_COMMENT TK_END_COMMENT TK_LN_COMMENT
 
-%nonassoc TK_COM_IF
 
 
 %start S
 
 
-%left '='
-%left "||" "&&"
-%left "==" "!="
-%left '<' '>' ">=" "<="
-%left '+' '-'
-%left '*' '/'
+%right TK_ATTR
+%left TK_OP_LOG
+%left TK_OP_REL
+%left TK_OP_ARI_AS
+%left TK_OP_ARI_MD
 
 
 %%
@@ -725,7 +694,7 @@ BL_LOOP		: INIT_BLOCO_BREAK TK_COM_WHILE '(' CONDICAO ')' BLOCO END_BLOCO
 
 E 			: '(' E ')'
 			{
-				$$.traducao = $2.traducao;
+				$$ = $2;
 			}
 			| TK_CAST E
 			{
@@ -808,7 +777,7 @@ E 			: '(' E ')'
 				}
 
 			}
-			| E TK_OP_ARI E
+			| E TK_OP_ARI_AS E
 			{
 				// + - * /
 				$$.label = cria_nome_tmp();
@@ -889,6 +858,39 @@ E 			: '(' E ')'
 						
 					} else{
 						yyerror("ERRO: Não é possivel realizar operações aritméticas entre estes tipos de expressões.");
+					}
+				}
+			}
+			| E TK_OP_ARI_MD E
+			{
+				// + - * /
+				$$.label = cria_nome_tmp();
+				$$.traducao = $1.traducao + $3.traducao;
+
+				// para numeros
+				if(($1.tipo_var == "int" || $1.tipo_var == "float") && ($3.tipo_var == "int" || $3.tipo_var == "float")){
+					if($1.tipo_var == $3.tipo_var){
+						$$.tipo_var = $1.tipo_var;
+
+						declaracaoAddVar(traducao_tipo($$), $$.label);
+						$$.traducao += $$.label + " = " + $1.label + " " + $2.label + " " + $3.label + "; \n";
+					} else{
+						$$.tipo_var = "float";
+						if($1.tipo_var == "float"){
+							string aux_var = cria_nome_tmp();
+
+							declaracaoAddVar(traducao_tipo($$), aux_var);
+							declaracaoAddVar(traducao_tipo($$), $$.label);
+							$$.traducao += aux_var + " = (float) " + $3.label + "; \n";
+							$$.traducao += $$.label + " = " + $1.label + " " + $2.label + " " + aux_var + "; \n";
+						} else{
+							string aux_var = cria_nome_tmp();
+
+							declaracaoAddVar(traducao_tipo($$), aux_var);
+							declaracaoAddVar(traducao_tipo($$), $$.label);
+							$$.traducao += aux_var + " = (float) " + $1.label + "; \n";
+							$$.traducao += $$.label + " = " + aux_var + " " + $2.label + " " + $3.label + "; \n";
+						}
 					}
 				}
 			}

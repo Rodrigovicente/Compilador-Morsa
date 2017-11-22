@@ -2,8 +2,8 @@
 	int b;
 
 
-	b:scan
+	b = 2
 
-	println: b
+	println: true ' ' 3 - b * 4 / 4 + 0.5 " O LOCO"
 
 }
