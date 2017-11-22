@@ -8,7 +8,7 @@ DIGITO [0-9]
 LETRA [A-Za-z_]
 
 DELIM {ESPACO}+
-NUM {DIGITO}+
+NUM -?{DIGITO}+
 REAL {NUM}+("."{NUM}+)?
 CHAR \'([^\"\n]|\\\")\'
 BOOL "true"|"false"|"1"|"0"
@@ -21,6 +21,8 @@ STRING \"([^\"\n]|\\\")*\"
 
 ";"		{ yylval.label = yytext; return TK_SEMICOL; }
 
+":"		{ yylval.label = yytext; return TK_COLON; }
+
 {DELIM} 	{}
 
 
@@ -32,9 +34,13 @@ STRING \"([^\"\n]|\\\")*\"
 
 [(){}[\];,]	{ return *yytext; }
 
-[+\-*/]		{ yylval.label = yytext; return TK_OP_ARI; }
+[+\-]		{ yylval.label = yytext; return TK_OP_ARI_AS; }
+
+[*/]		{ yylval.label = yytext; return TK_OP_ARI_MD; }
 
 "=="|"<"|"<="|">"|">="|"!="		{ yylval.label = yytext; return TK_OP_REL; }
+
+"&&"|"||"|"!"	{ yylval.label = yytext; return TK_OP_LOG; }
 
 "if"	{ yylval.label = yytext; return TK_COM_IF; }
 
@@ -62,8 +68,6 @@ STRING \"([^\"\n]|\\\")*\"
 
 "scan"	{ yylval.label = yytext; return TK_SCAN; }
 
-":"		{ yylval.label = yytext; return TK_COLON; }
-
 
 "/*"	{ yylval.label = yytext; return TK_START_COMMENT; }
 
@@ -72,7 +76,6 @@ STRING \"([^\"\n]|\\\")*\"
 "//"	{ yylval.label = yytext; return TK_LN_COMMENT; }
 
 
-"&&"|"||"|"!"	{ yylval.label = yytext; return TK_OP_LOG; }
 
 "="|"*="|"/="|"+="|"-="|"=="|"++"|"--"	{yylval.label = yytext; return TK_ATTR; }
 
