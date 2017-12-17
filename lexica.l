@@ -71,7 +71,7 @@ STRING \"([^\"\n]|\\\")*\"
 
 "/*"	{ yylval.label = yytext; return TK_START_COMMENT; }
 
-"*/"	{ yylval.label = yytext; return TK_START_COMMENT; }
+"*/"	{ yylval.label = yytext; return TK_END_COMMENT; }
 
 "//"	{ yylval.label = yytext; return TK_LN_COMMENT; }
 

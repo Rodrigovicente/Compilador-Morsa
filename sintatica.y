@@ -403,8 +403,8 @@ COMANDO 	: E END_COMANDO
 			| BL_CONDICIONAL BRKLN
 			| BL_SWITCH BRKLN
 			| BL_LOOP BRKLN
-			| COMENT
-			| COMENT_LN
+			| COMENT BRKLN
+			| COMENT_LN BRKLN
 			;
 
 END_COMANDO	: TK_BRKLN BRKLN
@@ -1315,7 +1315,7 @@ DECLARACAO	: TK_TIPO TK_ID
 						$$.nome_var = $2.label;
 						$$.tipo_var = $4.tipo_var;
 						$$.traducao = $4.traducao;
-						declaracaoAddVar(traducao_tipo($$), $$.label);
+						declaracaoAddVar(traducao_tipo($$), $$.label, false);
 						$$.traducao += $$.label + " = " + $4.label + "; \n";
 
 						if($4.tipo_var == "string"){
