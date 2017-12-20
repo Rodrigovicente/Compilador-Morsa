@@ -1,6 +1,23 @@
+	
+	int a = 0
+	var b
+	b = 1;
 
+	int v
+	v = a + b
 
-	if(true){
+	float max
 
+	println: a
+	println: b;
+	println: v
+
+	max = 300.0
+	
+	
+	while(v < max){
+		a = b
+		b = v
+		v = a + b;
+		println: v
 	}
-	print: "a" + "b"
