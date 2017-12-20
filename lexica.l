@@ -9,6 +9,7 @@ LETRA [A-Za-z_]
 
 DELIM {ESPACO}+
 NUM -?{DIGITO}+
+PNUM {DIGITO}+
 REAL {NUM}+("."{NUM}+)?
 CHAR \'([^\"\n]|\\\")\'
 BOOL "true"|"false"|"1"|"0"
@@ -32,7 +33,7 @@ STRING \"([^\"\n]|\\\")*\"
 
 "(int)"|"(float)"|"(char)"		{ yylval.label = yytext; return TK_CAST; }
 
-[(){}[\];,]	{ return *yytext; }
+[()]	{ return *yytext; }
 
 [+\-]		{ yylval.label = yytext; return TK_OP_ARI_AS; }
 
@@ -76,10 +77,16 @@ STRING \"([^\"\n]|\\\")*\"
 "//"	{ yylval.label = yytext; return TK_LN_COMMENT; }
 
 
-
 "="|"*="|"/="|"+="|"-="|"=="|"++"|"--"	{yylval.label = yytext; return TK_ATTR; }
 
 
+"[" 	{ yylval.label = yytext; return TK_ABRECOLCH; }
+"]" 	{ yylval.label = yytext; return TK_FECHACOLCH; }
+
+"{" 	{ yylval.label = yytext; return TK_ABRECHAV; }
+"}" 	{ yylval.label = yytext; return TK_FECHACHAV; }
+
+"," 	{ yylval.label = yytext; return TK_COMMA; }
 
 {NUM}		{ yylval.label = yytext; yylval.tipo_var = "int"; return TK_NUM; }
 {REAL}		{ yylval.label = yytext; yylval.tipo_var = "float"; return TK_REAL; }

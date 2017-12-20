@@ -1,9 +1,6 @@
-{
-	int b;
 
 
-	b = 2
+	if(true){
 
-	println: true ' ' 3 - b * 4 / 4 + 0.5 " O LOCO"
-
-}
+	}
+	print: "a" + "b"

@@ -54,6 +54,8 @@ vector<mapaVariaveis> pilhaMapas;
 vector<declaracaoVar> pilhaDeclaracao;
 vector<atributos> pilhaSwitch;
 
+vector<string> seqIndex;
+
 bool isComentario = false;
 
 
@@ -63,7 +65,8 @@ map<string,string> relacaoTipos = 	{
 										{"float","float"},
 										{"char","char"},
 										{"bool","int"},
-										{"string","char*"}
+										{"string","char*"},
+										{"!morsa","!morsa"}
 									};
 
 string traducao_tipo(atributos attr){
@@ -119,6 +122,7 @@ bool mapasContemVar(atributos variavel){
 }
 
 void declaracaoAddVar(string tipo_var, string nome_var){
+				//printf("declaracao add var\n");
 	if(!isComentario){
 		declaracaoVar variavel;
 		variavel.tipo_var = tipo_var;
@@ -150,7 +154,9 @@ string declaraVariaveis(){
 	int i;
 
 	for(i = 0; i < pilhaDeclaracao.size(); i++){
-		result += pilhaDeclaracao[i].tipo_var + " " + pilhaDeclaracao[i].nome_var + "; \n";
+		if(pilhaDeclaracao[i].tipo_var != "!morsa"){
+			result += pilhaDeclaracao[i].tipo_var + " " + pilhaDeclaracao[i].nome_var + "; \n";
+		}
 	}
 
 	return result;
@@ -161,7 +167,7 @@ string freeVariaveis(){
 	int i;
 
 	for(i = 0; i < pilhaDeclaracao.size(); i++){
-		if(pilhaDeclaracao[i].tipo_var == "char*" && pilhaDeclaracao[i].isFreeable == true){
+		if((pilhaDeclaracao[i].tipo_var.find("*") != string::npos) && (pilhaDeclaracao[i].isFreeable == true)){ //tipo_var contains "*"
 			result += "free(" + pilhaDeclaracao[i].nome_var + "); \n";
 		}
 	}
@@ -233,6 +239,39 @@ bool mapaSetTam(string nome_var, string str_tamanho){
 		}
 
 		printf(" .... nao mudou .....: %s\n", str_tamanho.c_str() );
+		saida = false;
+		return saida;
+	}
+	return false;
+}
+bool mapaSetTipo(string nome_var, string tipo_var){
+
+	if(!isComentario){
+		bool saida;
+
+		int i, j, k;
+		printf(" *********** mudando tipo var\n" );
+
+		for(i = pilhaMapas.size() - 1; i >= 0; i--){
+			if(!pilhaMapas[i].attrs.empty()){
+				for(j = 0; j < pilhaMapas[i].attrs.size(); j++){
+					if(pilhaMapas[i].attrs[j].nome_var == nome_var){
+						pilhaMapas[i].attrs[j].tipo_var = tipo_var;
+
+						for(k = 0; i < pilhaDeclaracao.size(); i++){
+							if(pilhaDeclaracao[k].nome_var == nome_var){
+								pilhaDeclaracao[k].tipo_var = tipo_var;
+								printf("mudou o tipo\n");
+								break;
+							}
+						}
+								printf("mudou o tipo 2\n");
+						saida = true;
+						return saida;
+					}
+				}
+			}
+		}
 		saida = false;
 		return saida;
 	}
@@ -311,7 +350,8 @@ string cria_nome_rot(){
 %token TK_TIPO TK_TIPO_INFERIDO
 %token TK_COM_IF TK_COM_ELSE TK_COM_WHILE TK_COM_FOR TK_COM_DO TK_COM_SWITCH TK_COM_BREAK TK_COM_CONTINUE TK_CASE TK_DEFAULT
 %token TK_PRINT TK_PRINTLN TK_SCAN
-%token TK_ENDL TK_BRKLN TK_SEMICOL TK_COLON
+%token TK_ENDL TK_BRKLN TK_SEMICOL TK_COLON TK_COMMA
+%token TK_ABRECOLCH TK_FECHACOLCH TK_ABRECHAV TK_FECHACHAV
 %token TK_START_COMMENT TK_END_COMMENT TK_LN_COMMENT
 
 
@@ -328,7 +368,7 @@ string cria_nome_rot(){
 
 %%
 
-S 			: INIT_BLOCO BLOCO END_BLOCO
+S 			: INIT_BLOCO MAIN_BLOCO END_BLOCO
 			{
 				string out = "/*Compilador MORSA*/ \n #include <iostream>\n#include <string.h>\n#include<string.h>\n#include<stdio.h>\nusing namespace std;\nint main(void)\n{\n" + declaraVariaveis() + "\n\n" + $2.traducao + "\n\n" + freeVariaveis() + "\n \t return 0;\n}\n";
 				FILE* fout = fopen("intermed.cpp", "w");
@@ -373,7 +413,14 @@ END_BLOCO	:
 				pilhaMapas.pop_back();
 			}
 
-BLOCO		: '{' BRKLN COMANDOS BRKLN '}'
+MAIN_BLOCO	: BRKLN COMANDOS BRKLN
+			{
+				$$.traducao = $2.traducao;
+				printf("CRIEI O BLOCO PRINCIPAL: %d\n", pilhaMapas.size());
+			}
+			;
+
+BLOCO		: TK_ABRECHAV BRKLN COMANDOS BRKLN TK_FECHACHAV
 			{
 				$$.traducao = $3.traducao;
 				printf("CRIEI UM BLOCO COM NIVEL: %d\n", pilhaMapas.size());
@@ -1086,7 +1133,11 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 							if($$.tipo_var == $3.tipo_var){
 								$$.traducao += $$.label + " = " + $3.label + "; \n";
 
-							} else{
+							} else if($$.tipo_var == "!morsa"){
+								mapaSetTipo($$.nome_var, $3.tipo_var);
+								declaracaoAddVar($3.tipo_var, $$.label);
+								$$.traducao += $$.label + " = " + $3.label + "; \n";
+							}else{
 								if(isConvertivel($$, $3)){
 									string aux_var1 = traducao_tipo($$);
 									string aux_var2 = cria_nome_tmp();
@@ -1172,7 +1223,7 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 								yyerror("ERRO: Os tipos das variáveis ou expressões não são válidos para a operação (ao menos uma não é float ou int).");
 							}
 						} else {
-								yyerror("ERRO: Deve ser atribuido um valor à variável para utilizar este tipo de atribuição.");
+								yyerror("ERRO 1: Deve ser atribuido um valor à variável para utilizar este tipo de atribuição.");
 						}
 					}
 				}
@@ -1250,7 +1301,7 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 				if($$.label == "!morsa"){
 					yyerror("ERRO: Não existe uma variável com este nome.");
 				} else if($$.str_tamanho == "!morsa"){
-					yyerror("ERRO: Deve ser atribuido um valor à variável para utilizar este tipo de atribuição.");
+					yyerror("ERRO 2: Deve ser atribuido um valor à variável para utilizar este tipo de atribuição.");
 				}else{
 					if($2.label == "++"){
 						if($$.tipo_var == "int"){
@@ -1283,6 +1334,65 @@ ATTR 		: TK_ID TK_ATTR E       	//TK_ATTR -> = *= /= += == ++ --
 				printf("ATRIBUI VALOR A VARIAVEL\n");
 			}
 			;
+
+/*
+VET_INDEX	: TK_ABRECOLCH E TK_FECHACOLCH
+			{
+				if($2.tipo_var == "int"){
+					$$.label = cria_nome_tmp();
+					$$.tipo_var = "int";
+					$$.traducao = $2.traducao;
+					$$.traducao += $$.tipo_var + " " + $$.label + " = (int) " + $2.label + "; \n";
+					seqIndex.push_back($$.label);
+				} else {
+					yyerror("ERRO: O valor do índice de uma matriz/vetor deve se inteiro.");					
+				}
+
+			}
+
+MAT_INDEX	: VET_INDEX MAT_INDEX
+			{
+				$$.label = cria_nome_tmp();
+				$$.tipo_var = "int";
+				$$.traducao = $1.traducao + $2.traducao;
+				$$.traducao += $$.tipo_var + " " + $$.label + " = (int) (" + $1.label + " * " + $2.label + "); \n";
+			}
+			| 
+			{
+				$$.traducao = "";
+			}
+			;
+VET_VALUES	: E TK_COMMA VET_VALUES
+			{
+
+			}
+			| E
+			;
+
+MAT_VALUES	: MAT_VALUES TK_COMMA MAT_VALUES
+			{
+
+			}
+			| TK_ABRECHAV MAT_VALUES TK_FECHACHAV
+			{
+
+			}
+			| MAT_VALUES
+			| VET_VALUES
+			;	
+
+VET_ATTR	: TK_ATTR TK_ABRECHAV VET_VALUES TK_FECHACHAV
+			{
+
+			}
+			;	
+
+MAT_ATTR	: TK_ATTR TK_ABRECHAV MAT_VALUES TK_FECHACHAV
+			{
+
+			}
+			;
+*/
 
 DECLARACAO	: TK_TIPO TK_ID
 			{
@@ -1333,11 +1443,58 @@ DECLARACAO	: TK_TIPO TK_ID
 				}
 
 				printf("DECLAREI UMA VARIAVEL\n");
-			}/*
+			}
 			| TK_TIPO_INFERIDO TK_ID
 			{
-				yyerror("ERRO: Você deve atribuir um valor a esta variável para inferir o seu tipo.");
-			}*/
+				$$ = mapaGetVar($2);
+
+				if($$.label == "!morsa"){
+					$$.label = cria_nome_var();
+					$$.nome_var = $2.label;
+					$$.tipo_var = "!morsa";
+					$$.str_tamanho = "";
+					declaracaoAddVar("!morsa", $$.label, false);
+					
+					mapasAddVar($$);
+				} else{
+					yyerror("ERRO: Já existe uma variável com este nome.");
+				}
+				printf("DECLAREI UMA VARIAVEL\n");
+			}
+			/*
+			| TK_TIPO TK_ID VET_INDEX
+			{
+
+				$$ = mapaGetVar($2);
+
+				if($$.label == "!morsa"){
+					$$.label = cria_nome_var();
+					$$.nome_var = $2.label;
+					$$.tipo_var = $1.label + "*";
+
+					string aux_var1 = cria_nome_tmp();
+
+					$$.traducao = $3.traducao;
+					$$.traducao += $$.label + " = (" + $$.tipo_var + ") malloc(" + $3.label + " * sizeof(" + $1.label + ")); \n";
+					$$.traducao += aux_var1 + " = (int*) malloc(" + to_string(seqIndex.size()) + " * sizeof(int)); \n";
+
+					for(int i = 0; i < seqIndex.size(); i++){
+						$$.traducao += aux_var1 + "[" + to_string(i) + "] = " + seqIndex[i] + "; \n";
+					}
+
+					seqIndex.clear();
+
+					$$.str_tamanho = "!morsa";
+
+					mapasAddVar($$);
+					declaracaoAddVar(traducao_tipo($$), $$.label);
+					declaracaoAddVar("int*", aux_var1);
+
+				} else{
+					yyerror("ERRO: Já existe uma variável com este nome.");
+				}
+			}
+			*/
 			;
 
 PRINT		: TK_PRINT TK_COLON PRINT_EXPS
